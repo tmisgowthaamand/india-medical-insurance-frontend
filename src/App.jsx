@@ -39,9 +39,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <div className="flex h-screen bg-gray-100">
+                <div className="flex h-screen bg-gray-100 overflow-hidden">
                   <NavBar />
-                  <main className="flex-1 lg:ml-64 overflow-y-auto">
+                  <main className="flex-1 overflow-y-auto lg:ml-0">
                     <Dashboard />
                   </main>
                   <ScrollToTopButton />
@@ -53,9 +53,9 @@ function App() {
             path="/prediction"
             element={
               <ProtectedRoute>
-                <div className="flex h-screen bg-gray-100">
+                <div className="flex h-screen bg-gray-100 overflow-hidden">
                   <NavBar />
-                  <main className="flex-1 lg:ml-64 overflow-y-auto">
+                  <main className="flex-1 overflow-y-auto lg:ml-0">
                     <Prediction />
                   </main>
                   <ScrollToTopButton />
@@ -67,9 +67,9 @@ function App() {
             path="/claims-analysis"
             element={
               <ProtectedRoute>
-                <div className="flex h-screen bg-gray-100">
+                <div className="flex h-screen bg-gray-100 overflow-hidden">
                   <NavBar />
-                  <main className="flex-1 lg:ml-64 overflow-y-auto">
+                  <main className="flex-1 overflow-y-auto lg:ml-0">
                     <ClaimsAnalysis />
                   </main>
                   <ScrollToTopButton />
@@ -83,9 +83,9 @@ function App() {
             path="/admin"
             element={
               <AdminRoute>
-                <div className="flex h-screen bg-gray-100">
+                <div className="flex h-screen bg-gray-100 overflow-hidden">
                   <NavBar />
-                  <main className="flex-1 lg:ml-64 overflow-y-auto">
+                  <main className="flex-1 overflow-y-auto lg:ml-0">
                     <Admin />
                   </main>
                   <ScrollToTopButton />

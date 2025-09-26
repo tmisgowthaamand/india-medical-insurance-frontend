@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Home
 } from 'lucide-react';
+import Logo from '../components/Logo';
 import {
   BarChart,
   Bar,
@@ -200,7 +201,7 @@ const ClaimsAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-teal-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           {/* Breadcrumb Navigation */}
@@ -220,13 +221,11 @@ const ClaimsAnalysis = () => {
           <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-8 text-white shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <TrendingUp className="h-8 w-8 text-white" />
-                </div>
+                <Logo size="large" showText={true} onDark={true} />
                 <div>
                   <h1 className="text-3xl font-bold">Claims Analytics</h1>
                   <p className="text-green-100 mt-2">
-                    Advanced medical insurance claims analysis and insights
+                    MediCare+ advanced claims analysis and insights
                   </p>
                 </div>
               </div>
@@ -612,11 +611,12 @@ const ClaimsAnalysis = () => {
         
         .animate-fade-in {
           animation: fade-in 0.6s ease-out;
+          opacity: 1;
         }
         
         .animate-slide-up {
           animation: slide-up 0.6s ease-out;
-          opacity: 0;
+          opacity: 1;
           animation-fill-mode: forwards;
         }
       `}</style>

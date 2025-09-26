@@ -8,6 +8,7 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
+import Logo from '../components/Logo';
 import {
   BarChart,
   Bar,
@@ -110,20 +111,35 @@ const Dashboard = () => {
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
+        {/* Logo and Brand Section */}
+        <div className="bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-2xl p-6 mb-6 text-white shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Logo size="large" showText={true} onDark={true} />
+              <div>
+                <h1 className="text-2xl font-bold">Medical Insurance Dashboard</h1>
+                <p className="text-blue-100 mt-1">
+                  AI-Powered Analytics & Insights
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={fetchData}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors duration-200 backdrop-blur-sm"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+        
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h2 className="text-2xl font-bold text-gray-900">Analytics Overview</h2>
             <p className="mt-2 text-gray-600">
-              Overview of medical insurance data and model performance
+              Real-time insights into medical insurance data and model performance
             </p>
           </div>
-          <button
-            onClick={fetchData}
-            className="btn-secondary flex items-center space-x-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 

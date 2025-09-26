@@ -25,6 +25,7 @@ import {
   Home
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Logo from '../components/Logo';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -140,7 +141,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           {/* Breadcrumb Navigation */}
@@ -160,13 +161,11 @@ const Admin = () => {
           <div className="bg-gradient-to-r from-red-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
+                <Logo size="large" showText={true} onDark={true} />
                 <div>
                   <h1 className="text-3xl font-bold">Admin Control Center</h1>
                   <p className="text-red-100 mt-2">
-                    Medical Insurance System Management
+                    MediCare+ System Management
                   </p>
                 </div>
               </div>
@@ -193,7 +192,7 @@ const Admin = () => {
           {/* Left Column - Model Management */}
           <div className="lg:col-span-2 space-y-6">
             {/* Model Status Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up">
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
@@ -284,7 +283,7 @@ const Admin = () => {
             </div>
 
             {/* Dataset Upload Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up delay-200">
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
                   <Upload className="h-6 w-6 text-white" />
@@ -358,7 +357,7 @@ const Admin = () => {
           {/* Right Column - System Controls */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up delay-300">
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                   <Settings className="h-6 w-6 text-white" />
@@ -399,7 +398,7 @@ const Admin = () => {
             </div>
 
             {/* System Stats */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up delay-400">
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl">
                   <Server className="h-6 w-6 text-white" />
@@ -444,7 +443,7 @@ const Admin = () => {
             </div>
 
             {/* Medical Insurance Features */}
-            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 text-white animate-slide-up delay-500">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 text-white">
               <div className="flex items-center space-x-3 mb-4">
                 <Stethoscope className="h-8 w-8 text-white" />
                 <h3 className="text-lg font-bold">Medical AI Features</h3>
@@ -490,11 +489,12 @@ const Admin = () => {
           
           .animate-fade-in {
             animation: fade-in 0.6s ease-out;
+            opacity: 1;
           }
           
           .animate-slide-up {
             animation: slide-up 0.6s ease-out;
-            opacity: 0;
+            opacity: 1;
             animation-fill-mode: forwards;
           }
           

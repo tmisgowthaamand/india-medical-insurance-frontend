@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
 import { 
@@ -18,6 +18,7 @@ import {
   Stethoscope
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CompactLogo } from './Logo';
 
 const NavBar = () => {
   const location = useLocation();
@@ -108,19 +109,27 @@ const NavBar = () => {
         </button>
       </div>
 
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-white to-gray-50 shadow-2xl transform transition-all duration-300 ease-in-out ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0 border-r border-gray-200`}>
+      <div className={`
+        w-72 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200
+        fixed inset-y-0 left-0 z-40 shadow-2xl transform transition-all duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:translate-x-0 lg:shadow-none lg:flex lg:flex-col lg:h-full
+      `}>
         
         {/* Logo */}
         <div className="flex items-center px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-cyan-600">
-          <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm">
-            <Stethoscope className="h-7 w-7 text-white" />
-          </div>
+          <CompactLogo className="text-white" />
           <div className="ml-4">
-            <h1 className="text-xl font-bold text-white">Medical Insurance</h1>
-            <p className="text-blue-100 text-sm">AI Dashboard</p>
+            <p className="text-blue-100 text-sm font-medium">AI Dashboard</p>
           </div>
         </div>
 
@@ -143,7 +152,11 @@ const NavBar = () => {
         </div>
 
         {/* Navigation Links */}
-        <nav className="mt-6 px-4">
+        <nav className="flex-1 mt-6 px-4 overflow-y-auto">
+          {/* Debug indicator */}
+          <div className="mb-4 p-2 bg-blue-100 rounded text-center text-sm text-blue-800 lg:block hidden">
+            Navigation Menu
+          </div>
           <div className="space-y-2">
             {navItems.map((item, index) => {
               const Icon = item.icon;
@@ -154,7 +167,10 @@ const NavBar = () => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    console.log(`Navigating to: ${item.path}`);
+                  }}
                   className={`group flex items-center px-4 py-4 text-sm font-medium rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-md animate-fade-in ${
                     isActive
                       ? `${colorClasses.active} shadow-lg border-l-4`

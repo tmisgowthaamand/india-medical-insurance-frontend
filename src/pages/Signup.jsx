@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authAPI, handleAPIError } from '../api';
 import { Shield, Eye, EyeOff, UserPlus, Heart, Activity, Users, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Logo, { LogoVariant } from '../components/Logo';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -78,14 +79,15 @@ const Signup = () => {
         {/* Content */}
         <div className="relative z-10 text-center text-white px-8 animate-fade-in">
           <div className="mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-full backdrop-blur-sm mb-6 animate-scale-in">
-              <UserPlus className="w-10 h-10 text-white" />
+            {/* Medical Insurance Logo */}
+            <div className="flex justify-center mb-6 animate-scale-in">
+              <LogoVariant size="xl" showText={true} variant="medical" onDark={true} />
             </div>
             <h1 className="text-4xl font-bold mb-4 animate-slide-up">
-              Join Our Platform
+              Join HealthGuard
             </h1>
             <h2 className="text-2xl font-light mb-6 animate-slide-up delay-200">
-              Start Your Journey Today
+              Your Medical Insurance Partner
             </h2>
           </div>
           
@@ -118,16 +120,14 @@ const Signup = () => {
         <div className="max-w-md w-full space-y-8 animate-slide-in-right">
           {/* Header */}
           <div className="text-center">
-            <div className="flex justify-center lg:hidden mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full animate-scale-in">
-                <UserPlus className="w-8 h-8 text-white" />
-              </div>
+            <div className="flex justify-center lg:hidden mb-6 animate-scale-in">
+              <Logo size="large" showText={true} />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 animate-fade-in">
               Create Account
             </h2>
             <p className="mt-2 text-gray-600 animate-fade-in delay-200">
-              Join the Medical Insurance AI Platform
+              Join MediCare+ Insurance Platform
             </p>
           </div>
 

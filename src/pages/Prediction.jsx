@@ -22,6 +22,7 @@ import {
   Home
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Logo from '../components/Logo';
 
 const Prediction = () => {
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ const Prediction = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           {/* Breadcrumb Navigation */}
@@ -131,13 +132,11 @@ const Prediction = () => {
           <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <Brain className="h-8 w-8 text-white" />
-                </div>
+                <Logo size="large" showText={true} onDark={true} />
                 <div>
                   <h1 className="text-3xl font-bold">AI Claim Prediction</h1>
                   <p className="text-purple-100 mt-2">
-                    Advanced ML-powered insurance claim estimation
+                    MediCare+ ML-powered claim estimation
                   </p>
                 </div>
               </div>
@@ -162,7 +161,7 @@ const Prediction = () => {
         {/* Main Grid Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Prediction Form */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up">
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <div className="flex items-center space-x-3 mb-6">
               <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl">
                 <Stethoscope className="h-6 w-6 text-white" />
@@ -332,7 +331,7 @@ const Prediction = () => {
           {/* Prediction Results */}
           <div className="space-y-6">
             {prediction ? (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 animate-slide-up delay-200">
+              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
                     <TrendingUp className="h-6 w-6 text-white" />
@@ -457,7 +456,7 @@ const Prediction = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center animate-slide-up delay-200">
+              <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 text-center">
                 <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full mx-auto mb-4">
                   <Brain className="h-10 w-10 text-purple-600" />
                 </div>
@@ -485,7 +484,7 @@ const Prediction = () => {
             )}
 
             {/* Model Info */}
-            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 text-white animate-slide-up delay-300">
+            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl p-6 text-white">
               <div className="flex items-center space-x-3 mb-4">
                 <Brain className="h-8 w-8 text-white" />
                 <h3 className="text-lg font-bold">AI Model Information</h3>
@@ -535,6 +534,7 @@ const Prediction = () => {
           
           .animate-fade-in {
             animation: fade-in 0.6s ease-out;
+            opacity: 1;
           }
           
           .animate-slide-up {
