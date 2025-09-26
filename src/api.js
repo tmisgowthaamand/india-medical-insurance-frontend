@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:8001' : 'https://your-backend-url.onrender.com');
+  (window.location.hostname === 'localhost' ? 'http://localhost:8001' : 'https://india-medical-insurance-backend.onrender.com');
 
 // Create axios instance
 const api = axios.create({
