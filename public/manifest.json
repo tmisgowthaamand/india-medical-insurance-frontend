@@ -1,0 +1,82 @@
+{
+  "name": "MediCare+ AI-Powered Medical Insurance Dashboard",
+  "short_name": "MediCare+",
+  "description": "Advanced AI-powered medical insurance platform with claim prediction, risk analysis, and comprehensive healthcare analytics.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3B82F6",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["medical", "insurance", "healthcare", "analytics"],
+  "icons": [
+    {
+      "src": "/medicare-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/medicare-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/medicare-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/medicare-og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View medical insurance analytics dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/medicare-favicon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "AI Prediction",
+      "short_name": "Predict",
+      "description": "Generate AI-powered claim predictions",
+      "url": "/prediction",
+      "icons": [
+        {
+          "src": "/medicare-favicon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Claims Analysis",
+      "short_name": "Analytics",
+      "description": "Analyze medical insurance claims data",
+      "url": "/claims-analysis",
+      "icons": [
+        {
+          "src": "/medicare-favicon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

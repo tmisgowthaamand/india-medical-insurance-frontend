@@ -1,0 +1,63 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Background Pattern -->
+  <circle cx="100" cy="100" r="50" fill="white" opacity="0.05"/>
+  <circle cx="1100" cy="530" r="80" fill="white" opacity="0.05"/>
+  <circle cx="200" cy="500" r="30" fill="white" opacity="0.08"/>
+  <circle cx="1000" cy="150" r="60" fill="white" opacity="0.06"/>
+  
+  <!-- Main Logo Container -->
+  <rect x="100" y="165" width="300" height="300" rx="50" fill="white" opacity="0.1"/>
+  
+  <!-- Large Shield -->
+  <path d="M250 200L320 230V300C320 360 290 410 250 420C210 410 180 360 180 300V230L250 200Z" fill="white" opacity="0.9"/>
+  
+  <!-- Large Heart -->
+  <path d="M250 380C250 380 200 340 200 310C200 290 220 270 250 270C270 270 280 280 280 290C280 280 290 270 310 270C340 270 360 290 360 310C360 340 250 380 250 380Z" fill="#EF4444"/>
+  
+  <!-- Medical Cross -->
+  <rect x="240" y="220" width="20" height="80" fill="white" opacity="0.8"/>
+  <rect x="210" y="250" width="80" height="20" fill="white" opacity="0.8"/>
+  
+  <!-- Title Text -->
+  <text x="500" y="280" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white">
+    MediCare+
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="500" y="340" font-family="Arial, sans-serif" font-size="36" fill="white" opacity="0.9">
+    AI-Powered Medical Insurance
+  </text>
+  
+  <!-- Description -->
+  <text x="500" y="400" font-family="Arial, sans-serif" font-size="24" fill="white" opacity="0.8">
+    Advanced claim prediction • Risk analysis • Healthcare analytics
+  </text>
+  
+  <!-- Medical Icons -->
+  <g transform="translate(500, 450)">
+    <!-- Stethoscope -->
+    <circle cx="50" cy="30" r="25" fill="white" opacity="0.2"/>
+    <path d="M40 20C40 15 44 10 50 10C56 10 60 15 60 20V35C60 40 56 45 50 45C44 45 40 40 40 35V20Z" fill="white" opacity="0.6"/>
+    
+    <!-- Heart Rate -->
+    <circle cx="150" cy="30" r="25" fill="white" opacity="0.2"/>
+    <path d="M130 30L140 20L145 40L150 15L155 35L160 25L170 30" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
+    
+    <!-- Shield -->
+    <circle cx="250" cy="30" r="25" fill="white" opacity="0.2"/>
+    <path d="M250 15L265 20V35C265 42 260 47 250 48C240 47 235 42 235 35V20L250 15Z" fill="white" opacity="0.6"/>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

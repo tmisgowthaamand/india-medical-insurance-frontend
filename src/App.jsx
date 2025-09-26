@@ -1,11 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authAPI } from './api';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 // Import components
 import NavBar from './components/NavBar';
 import ScrollToTop from './components/ScrollToTop';
 import ScrollToTopButton from './components/ScrollToTopButton';
+import TitleProvider from './components/TitleProvider';
+import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -25,9 +28,11 @@ const AdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <div className="min-h-screen bg-gray-50">
+    <AppLoader>
+      <Router>
+        <ScrollToTop />
+        <TitleProvider>
+          <div className="min-h-screen bg-gray-50">
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -93,9 +98,11 @@ function App() {
               </AdminRoute>
             }
           />
-        </Routes>
-      </div>
-    </Router>
+          </Routes>
+          </div>
+        </TitleProvider>
+      </Router>
+    </AppLoader>
   );
 }
 

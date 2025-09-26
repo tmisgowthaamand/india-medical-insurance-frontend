@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Logo from '../components/Logo';
+import PageLoader from '../components/PageLoader';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -34,20 +35,35 @@ const Admin = () => {
   const [uploading, setUploading] = useState(false);
   const [retraining, setRetraining] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const fetchModelInfo = async () => {
+  const fetchModelInfo = async (showRefreshing = false) => {
     try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
       const info = await dashboardAPI.getModelInfo();
       setModelInfo(info);
+      
+      if (showRefreshing) {
+        toast.success('Model information refreshed successfully!');
+      }
     } catch (error) {
       handleAPIError(error, 'Failed to fetch model information');
     } finally {
-      setLoading(false);
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -85,7 +101,7 @@ const Admin = () => {
       const fileInput = document.getElementById('file-upload');
       if (fileInput) fileInput.value = '';
       // Refresh model info
-      await fetchModelInfo();
+      await fetchModelInfo(false);
     } catch (error) {
       handleAPIError(error, 'Upload failed');
     } finally {
@@ -94,14 +110,39 @@ const Admin = () => {
   };
 
   const handleRetrain = async () => {
+    if (retraining) return; // Prevent multiple clicks
+    
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to retrain the model? This process may take several minutes and will update the current model with new training data.'
+    );
+    
+    if (!confirmed) return;
+    
     setRetraining(true);
+    toast.info('Starting model retraining process... This may take a few minutes.');
+    
     try {
       const result = await adminAPI.retrainModel();
-      toast.success(result.message || 'Model retrained successfully!');
-      // Refresh model info
-      await fetchModelInfo();
+      toast.success(result.message || 'Model retrained successfully! 🎉');
+      
+      // Refresh model info to show updated metrics
+      await fetchModelInfo(false);
+      
+      // Additional success feedback
+      toast.success('Model information updated with new training results!');
     } catch (error) {
-      handleAPIError(error, 'Retraining failed');
+      console.error('Retrain error:', error);
+      handleAPIError(error, 'Model retraining failed');
+      
+      // Additional error context
+      if (error.response?.status === 500) {
+        toast.error('Server error during retraining. Please check the backend logs.');
+      } else if (error.response?.status === 404) {
+        toast.error('Retraining endpoint not found. Please check API configuration.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        toast.error('Network error. Please check your connection and try again.');
+      }
     } finally {
       setRetraining(false);
     }
@@ -125,16 +166,11 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 flex items-center space-x-4">
-          <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full">
-            <RefreshCw className="h-6 w-6 animate-spin text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Loading Admin Panel</h3>
-            <p className="text-gray-600">Initializing system management...</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 flex items-center justify-center p-8">
+        <PageLoader 
+          message="Loading Admin Panel" 
+          size="large" 
+        />
       </div>
     );
   }
@@ -204,11 +240,12 @@ const Admin = () => {
                   </div>
                 </div>
                 <button
-                  onClick={fetchModelInfo}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors duration-200"
+                  onClick={() => fetchModelInfo(true)}
+                  disabled={refreshing}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Refresh</span>
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
                 </button>
               </div>
               
@@ -368,11 +405,19 @@ const Admin = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Retraining will update the AI model with the current dataset. 
+                    This process may take several minutes and will improve prediction accuracy.
+                  </p>
+                </div>
+                
                 <button
                   onClick={handleRetrain}
-                  disabled={retraining}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                  disabled={retraining || loading}
+                  title={retraining ? 'Model retraining in progress...' : 'Retrain the AI model with current dataset'}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                   {retraining ? (
                     <>
@@ -388,11 +433,12 @@ const Admin = () => {
                 </button>
 
                 <button
-                  onClick={fetchModelInfo}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors duration-200"
+                  onClick={() => fetchModelInfo(true)}
+                  disabled={refreshing}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <RefreshCw className="h-5 w-5" />
-                  <span>Refresh Status</span>
+                  <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>{refreshing ? 'Refreshing...' : 'Refresh Status'}</span>
                 </button>
               </div>
             </div>
