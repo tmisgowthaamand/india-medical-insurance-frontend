@@ -281,11 +281,11 @@ const Prediction = () => {
               </button>
             </div>
           </form>
-        </div>
+          </div>
 
-        {/* Prediction Results */}
-        <div className="space-y-6">
-          {prediction ? (
+          {/* Prediction Results */}
+          <div className="space-y-6">
+            {prediction ? (
             <div className="card">
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                 <TrendingUp className="h-5 w-5 mr-2" />
@@ -390,26 +390,27 @@ const Prediction = () => {
                 Fill out the form on the left to generate a claim amount prediction
               </p>
             </div>
-          )}
+            )}
 
-          {/* Model Info */}
-          <div className="card">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">
-              About the Model
-            </h3>
-            <div className="text-sm text-gray-600 space-y-2">
-              <p>
-                This prediction uses a Random Forest Regressor trained on historical 
-                medical insurance data from India.
-              </p>
-              <p>
-                The model considers factors like age, BMI, smoking status, gender, 
-                region, and premium amount to predict claim amounts.
-              </p>
-              <p className="text-xs text-gray-500 mt-4">
-                <strong>Disclaimer:</strong> This is a demo model for educational purposes. 
-                Actual insurance decisions should involve comprehensive risk assessment.
-              </p>
+            {/* Model Info */}
+            <div className="card">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
+                About the Model
+              </h3>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p>
+                  This prediction uses a Random Forest Regressor trained on historical 
+                  medical insurance data from India.
+                </p>
+                <p>
+                  The model considers factors like age, BMI, smoking status, gender, 
+                  region, and premium amount to predict claim amounts.
+                </p>
+                <p className="text-xs text-gray-500 mt-4">
+                  <strong>Disclaimer:</strong> This is a demo model for educational purposes. 
+                  Actual insurance decisions should involve comprehensive risk assessment.
+                </p>
+              </div>
             </div>
           </div>
         </div>

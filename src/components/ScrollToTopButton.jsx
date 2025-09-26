@@ -40,7 +40,7 @@ const ScrollToTopButton = () => {
         </button>
       )}
       
-      <style jsx>{`
+      <style>{`
         @keyframes bounce-in {
           0% {
             opacity: 0;

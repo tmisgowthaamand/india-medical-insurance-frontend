@@ -471,7 +471,7 @@ const Admin = () => {
           </div>
         </div>
 
-        <style jsx>{`
+        <style>{`
           @keyframes fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
