@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Refresh Functionality</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .refresh-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .refresh-btn:hover {
+            background-color: #0056b3;
+        }
+        .refresh-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .loading {
+            color: #007bff;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        .refresh-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+        }
+        .refresh-icon.spinning {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_BASE_URL = 'http://localhost:8001';
+
+        function RefreshIcon({ spinning }) {
+            return <span className={`refresh-icon ${spinning ? 'spinning' : ''}`}></span>;
+        }
+
+        function DashboardTest() {
+            const [stats, setStats] = useState(null);
+            const [modelInfo, setModelInfo] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [authToken, setAuthToken] = useState(null);
+            const [lastRefresh, setLastRefresh] = useState(null);
+
+            // Login function
+            const login = async () => {
+                try {
+                    const formData = new FormData();
+                    formData.append('username', 'admin@example.com');
+                    formData.append('password', 'admin123');
+
+                    const response = await fetch(`${API_BASE_URL}/login`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        setAuthToken(data.access_token);
+                        return data.access_token;
+                    } else {
+                        throw new Error('Login failed');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    setError('Login failed');
+                    return null;
+                }
+            };
+
+            // Fetch data function (this is the refresh functionality)
+            const fetchData = async (token = authToken) => {
+                if (!token) {
+                    const newToken = await login();
+                    if (!newToken) return;
+                    token = newToken;
+                }
+
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const headers = { 'Authorization': `Bearer ${token}` };
+                    
+                    const [statsResponse, modelResponse] = await Promise.all([
+                        fetch(`${API_BASE_URL}/stats`, { headers }),
+                        fetch(`${API_BASE_URL}/model-info`, { headers })
+                    ]);
+
+                    if (statsResponse.ok && modelResponse.ok) {
+                        const statsData = await statsResponse.json();
+                        const modelData = await modelResponse.json();
+                        
+                        setStats(statsData);
+                        setModelInfo(modelData);
+                        setLastRefresh(new Date().toLocaleTimeString());
+                        setError(null);
+                    } else {
+                        throw new Error(`API Error: Stats ${statsResponse.status}, Model ${modelResponse.status}`);
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    setError(error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // Auto-load on component mount
+            useEffect(() => {
+                fetchData();
+            }, []);
+
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0,
+                }).format(value);
+            };
+
+            return (
+                <div>
+                    <div className="container">
+                        <div className="header">
+                            <div>
+                                <h1>Dashboard Refresh Test</h1>
+                                <p>Testing the refresh functionality that fetches stats and model info</p>
+                                {lastRefresh && (
+                                    <p className="success">Last refreshed: {lastRefresh}</p>
+                                )}
+                            </div>
+                            <button 
+                                className="refresh-btn" 
+                                onClick={() => fetchData()}
+                                disabled={loading}
+                            >
+                                <RefreshIcon spinning={loading} />
+                                {loading ? 'Refreshing...' : 'Refresh'}
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="error">
+                                <strong>Error:</strong> {error}
+                            </div>
+                        )}
+
+                        {stats && (
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-label">Total Policies</div>
+                                    <div className="stat-value">{stats.total_policies?.toLocaleString()}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Average Premium</div>
+                                    <div className="stat-value">{formatCurrency(stats.avg_premium)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Average Claim</div>
+                                    <div className="stat-value">{formatCurrency(stats.avg_claim)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Smoker Percentage</div>
+                                    <div className="stat-value">{stats.smoker_percentage?.toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {modelInfo && (
+                            <div className="container">
+                                <h3>Model Information</h3>
+                                <div className="stats-grid">
+                                    <div className="stat-card">
+                                        <div className="stat-label">Status</div>
+                                        <div className="stat-value success">{modelInfo.status}</div>
+                                    </div>
+                                    {modelInfo.test_r2 && (
+                                        <div className="stat-card">
+                                            <div className="stat-label">R² Score</div>
+                                            <div className="stat-value">{(modelInfo.test_r2 * 100).toFixed(1)}%</div>
+                                        </div>
+                                    )}
+                                    {modelInfo.test_rmse && (
+                                        <div className="stat-card">
+                                            <div className="stat-label">RMSE</div>
+                                            <div className="stat-value">{formatCurrency(modelInfo.test_rmse)}</div>
+                                        </div>
+                                    )}
+                                    {modelInfo.training_samples && (
+                                        <div className="stat-card">
+                                            <div className="stat-label">Training Samples</div>
+                                            <div className="stat-value">{modelInfo.training_samples?.toLocaleString()}</div>
+                                        </div>
+                                    )}
+                                </div>
+                                {modelInfo.training_date && (
+                                    <p>Last trained: {new Date(modelInfo.training_date).toLocaleString()}</p>
+                                )}
+                            </div>
+                        )}
+
+                        {loading && !stats && (
+                            <div className="loading">
+                                <RefreshIcon spinning={true} /> Loading dashboard data...
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<DashboardTest />, document.getElementById('root'));
+    </script>
+</body>
+</html>

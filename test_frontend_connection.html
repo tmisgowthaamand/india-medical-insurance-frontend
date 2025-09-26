@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend Connection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Frontend API Connection Test</h1>
+        <p>This page tests the connection between the frontend and backend API.</p>
+        
+        <div class="test-section">
+            <h3>API Configuration</h3>
+            <p><strong>Backend URL:</strong> <span id="api-url">http://localhost:8001</span></p>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connection-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Login Test</h3>
+            <button onclick="testLogin()">Test Admin Login</button>
+            <div id="login-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Dashboard Data Test (Refresh Functionality)</h3>
+            <button onclick="testDashboardData()" id="dashboard-btn" disabled>Test Dashboard Refresh</button>
+            <div id="dashboard-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Model Info Test</h3>
+            <button onclick="testModelInfo()" id="model-btn" disabled>Test Model Info</button>
+            <div id="model-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8001';
+        let authToken = null;
+
+        function showResult(elementId, message, type = 'loading') {
+            const element = document.getElementById(elementId);
+            element.className = `test-section ${type}`;
+            element.innerHTML = message;
+        }
+
+        async function testConnection() {
+            showResult('connection-result', 'Testing connection...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('connection-result', 
+                        `✓ Connection successful!<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showResult('connection-result', 
+                        `✗ Connection failed: ${response.status}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('connection-result', 
+                    `✗ Connection error: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testLogin() {
+            showResult('login-result', 'Testing login...', 'loading');
+            
+            try {
+                const formData = new FormData();
+                formData.append('username', 'admin@example.com');
+                formData.append('password', 'admin123');
+
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.access_token;
+                    document.getElementById('dashboard-btn').disabled = false;
+                    document.getElementById('model-btn').disabled = false;
+                    
+                    showResult('login-result', 
+                        `✓ Login successful!<br>Token: ${authToken.substring(0, 20)}...`, 
+                        'success'
+                    );
+                } else {
+                    showResult('login-result', 
+                        `✗ Login failed: ${data.detail || 'Unknown error'}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('login-result', 
+                    `✗ Login error: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testDashboardData() {
+            if (!authToken) {
+                showResult('dashboard-result', '✗ Please login first', 'error');
+                return;
+            }
+
+            showResult('dashboard-result', 'Testing dashboard data refresh...', 'loading');
+            
+            try {
+                const [statsResponse, modelResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/stats`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    }),
+                    fetch(`${API_BASE_URL}/model-info`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    })
+                ]);
+
+                const statsData = await statsResponse.json();
+                const modelData = await modelResponse.json();
+                
+                if (statsResponse.ok && modelResponse.ok) {
+                    showResult('dashboard-result', 
+                        `✓ Dashboard refresh successful!<br>
+                        <strong>Stats:</strong> ${statsData.total_policies} policies<br>
+                        <strong>Model:</strong> ${modelData.status}<br>
+                        <pre>Stats: ${JSON.stringify(statsData, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showResult('dashboard-result', 
+                        `✗ Dashboard refresh failed: Stats ${statsResponse.status}, Model ${modelResponse.status}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('dashboard-result', 
+                    `✗ Dashboard refresh error: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testModelInfo() {
+            if (!authToken) {
+                showResult('model-result', '✗ Please login first', 'error');
+                return;
+            }
+
+            showResult('model-result', 'Testing model info...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/model-info`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('model-result', 
+                        `✓ Model info retrieved successfully!<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                        'success'
+                    );
+                } else {
+                    showResult('model-result', 
+                        `✗ Model info failed: ${response.status}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('model-result', 
+                    `✗ Model info error: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>
