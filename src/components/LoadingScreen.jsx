@@ -148,7 +148,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       </div>
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }

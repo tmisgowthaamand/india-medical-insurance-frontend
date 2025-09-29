@@ -29,7 +29,7 @@ const AdminRoute = ({ children }) => {
 function App() {
   return (
     <AppLoader>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ScrollToTop />
         <TitleProvider>
           <div className="min-h-screen bg-gray-50">
