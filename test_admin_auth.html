@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Authentication Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .status { font-weight: bold; padding: 5px 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Authentication Test</h1>
+        <p>This tool helps debug admin authentication issues in the MediCare+ platform.</p>
+        
+        <div class="test-section">
+            <h3>📊 Current Authentication Status</h3>
+            <div id="auth-status"></div>
+            <button class="btn-primary" onclick="checkAuthStatus()">Check Status</button>
+            <button class="btn-warning" onclick="debugAuth()">Debug Auth</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔑 Admin Access Control</h3>
+            <div id="admin-status"></div>
+            <button class="btn-success" onclick="setAdminTrue()">Set Admin = True</button>
+            <button class="btn-danger" onclick="setAdminFalse()">Set Admin = False</button>
+            <button class="btn-warning" onclick="clearAuth()">Clear All Auth</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🧪 Test Admin Functions</h3>
+            <div id="test-results"></div>
+            <button class="btn-primary" onclick="testUpload()">Test Upload Function</button>
+            <button class="btn-primary" onclick="testRetrain()">Test Retrain Function</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Quick Admin Setup</h3>
+            <p>Use these buttons to quickly set up admin access:</p>
+            <button class="btn-success" onclick="setupAdmin()">Setup Admin Access</button>
+            <button class="btn-success" onclick="setupDemoAdmin()">Setup Demo Admin</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Debug Log</h3>
+            <pre id="debug-log"></pre>
+            <button class="btn-warning" onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        let debugLog = [];
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLog.push(logEntry);
+            document.getElementById('debug-log').textContent = debugLog.join('\n');
+            console.log(logEntry);
+        }
+        
+        function clearLog() {
+            debugLog = [];
+            document.getElementById('debug-log').textContent = '';
+        }
+        
+        function checkAuthStatus() {
+            const token = localStorage.getItem('access_token');
+            const email = localStorage.getItem('email');
+            const isAdmin = localStorage.getItem('is_admin');
+            
+            const status = {
+                hasToken: !!token,
+                email: email,
+                isAdmin: isAdmin,
+                isAdminBoolean: isAdmin === 'true'
+            };
+            
+            log(`Auth Status Check: ${JSON.stringify(status)}`);
+            
+            let html = '<div>';
+            html += `<p><strong>Has Token:</strong> <span class="status ${status.hasToken ? 'success' : 'error'}">${status.hasToken ? 'YES' : 'NO'}</span></p>`;
+            html += `<p><strong>Email:</strong> ${status.email || 'Not set'}</p>`;
+            html += `<p><strong>Is Admin (raw):</strong> ${status.isAdmin || 'Not set'}</p>`;
+            html += `<p><strong>Is Admin (boolean):</strong> <span class="status ${status.isAdminBoolean ? 'success' : 'error'}">${status.isAdminBoolean ? 'TRUE' : 'FALSE'}</span></p>`;
+            html += '</div>';
+            
+            document.getElementById('auth-status').innerHTML = html;
+        }
+        
+        function debugAuth() {
+            const authData = {
+                access_token: localStorage.getItem('access_token'),
+                email: localStorage.getItem('email'),
+                is_admin: localStorage.getItem('is_admin'),
+                isAuthenticated: !!localStorage.getItem('access_token'),
+                isAdmin: localStorage.getItem('is_admin') === 'true'
+            };
+            
+            log(`Full Auth Debug: ${JSON.stringify(authData, null, 2)}`);
+            alert('Check debug log for full authentication details');
+        }
+        
+        function setAdminTrue() {
+            localStorage.setItem('is_admin', 'true');
+            log('Admin status set to TRUE');
+            checkAuthStatus();
+        }
+        
+        function setAdminFalse() {
+            localStorage.setItem('is_admin', 'false');
+            log('Admin status set to FALSE');
+            checkAuthStatus();
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('email');
+            localStorage.removeItem('is_admin');
+            log('All authentication data cleared');
+            checkAuthStatus();
+        }
+        
+        function setupAdmin() {
+            localStorage.setItem('access_token', 'admin_token_' + Date.now());
+            localStorage.setItem('email', 'admin@example.com');
+            localStorage.setItem('is_admin', 'true');
+            log('Admin access setup complete');
+            checkAuthStatus();
+        }
+        
+        function setupDemoAdmin() {
+            localStorage.setItem('access_token', 'demo_token_' + Date.now());
+            localStorage.setItem('email', 'gokrishna98@gmail.com');
+            localStorage.setItem('is_admin', 'true');
+            log('Demo admin access setup complete');
+            checkAuthStatus();
+        }
+        
+        function testUpload() {
+            const isAdmin = localStorage.getItem('is_admin') === 'true';
+            const hasToken = !!localStorage.getItem('access_token');
+            
+            let result = '<div>';
+            result += `<p><strong>Upload Test Results:</strong></p>`;
+            result += `<p>Has Token: ${hasToken ? '✅' : '❌'}</p>`;
+            result += `<p>Is Admin: ${isAdmin ? '✅' : '❌'}</p>`;
+            result += `<p>Can Upload: ${hasToken && isAdmin ? '✅ YES' : '❌ NO'}</p>`;
+            
+            if (!hasToken) {
+                result += `<p class="error">❌ Missing authentication token</p>`;
+            }
+            if (!isAdmin) {
+                result += `<p class="error">❌ Admin access required</p>`;
+            }
+            if (hasToken && isAdmin) {
+                result += `<p class="success">✅ Upload should work</p>`;
+            }
+            
+            result += '</div>';
+            document.getElementById('test-results').innerHTML = result;
+            
+            log(`Upload test: hasToken=${hasToken}, isAdmin=${isAdmin}, canUpload=${hasToken && isAdmin}`);
+        }
+        
+        function testRetrain() {
+            const isAdmin = localStorage.getItem('is_admin') === 'true';
+            const hasToken = !!localStorage.getItem('access_token');
+            
+            let result = '<div>';
+            result += `<p><strong>Retrain Test Results:</strong></p>`;
+            result += `<p>Has Token: ${hasToken ? '✅' : '❌'}</p>`;
+            result += `<p>Is Admin: ${isAdmin ? '✅' : '❌'}</p>`;
+            result += `<p>Can Retrain: ${hasToken && isAdmin ? '✅ YES' : '❌ NO'}</p>`;
+            
+            if (!hasToken) {
+                result += `<p class="error">❌ Missing authentication token</p>`;
+            }
+            if (!isAdmin) {
+                result += `<p class="error">❌ Admin access required</p>`;
+            }
+            if (hasToken && isAdmin) {
+                result += `<p class="success">✅ Retrain should work</p>`;
+            }
+            
+            result += '</div>';
+            document.getElementById('test-results').innerHTML = result;
+            
+            log(`Retrain test: hasToken=${hasToken}, isAdmin=${isAdmin}, canRetrain=${hasToken && isAdmin}`);
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            log('Admin Authentication Test Tool loaded');
+            checkAuthStatus();
+        };
+    </script>
+</body>
+</html>

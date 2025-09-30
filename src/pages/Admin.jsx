@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminAPI, dashboardAPI, handleAPIError } from '../api';
+import { adminAPI, dashboardAPI, handleAPIError, authAPI } from '../api';
 import Breadcrumb from '../components/Breadcrumb';
 import { 
   Settings, 
@@ -40,7 +40,26 @@ const Admin = () => {
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    
+    // Debug authentication status
+    console.log('Admin component mounted - checking authentication...');
+    const authDebug = authAPI.debugAuth();
+    
+    if (!authAPI.isAuthenticated()) {
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login');
+      return;
+    }
+    
+    if (!authAPI.isAdmin()) {
+      console.log('User not admin, redirecting to dashboard');
+      toast.error('Admin access required');
+      navigate('/dashboard');
+      return;
+    }
+    
+    console.log('Admin authentication verified, loading component');
+  }, [navigate]);
 
   // Mock model info for when API is unavailable
   const mockModelInfo = {
@@ -129,10 +148,25 @@ const Admin = () => {
       return;
     }
 
+    // Check admin status before upload
+    if (!authAPI.isAdmin()) {
+      toast.error('Admin access required for dataset upload');
+      navigate('/dashboard');
+      return;
+    }
+
+    console.log('Starting dataset upload:', uploadFile.name);
     setUploading(true);
+    
     try {
       const result = await adminAPI.uploadDataset(uploadFile);
-      toast.success(result.message || 'Dataset uploaded and model retrained successfully!');
+      
+      if (result.mock) {
+        toast.success(`${result.message} (Demo Mode)`, { duration: 6000 });
+      } else {
+        toast.success(result.message || 'Dataset uploaded and model retrained successfully!');
+      }
+      
       setUploadFile(null);
       // Reset file input
       const fileInput = document.getElementById('file-upload');
@@ -140,7 +174,17 @@ const Admin = () => {
       // Refresh model info
       await fetchModelInfo(false);
     } catch (error) {
-      handleAPIError(error, 'Upload failed');
+      console.error('Upload error:', error);
+      
+      if (error.message.includes('Admin access required')) {
+        toast.error(error.message);
+        navigate('/dashboard');
+      } else if (error.message.includes('Authentication required')) {
+        toast.error(error.message);
+        navigate('/login');
+      } else {
+        handleAPIError(error, 'Upload failed');
+      }
     } finally {
       setUploading(false);
     }
@@ -149,6 +193,13 @@ const Admin = () => {
   const handleRetrain = async () => {
     if (retraining) return; // Prevent multiple clicks
     
+    // Check admin status before retraining
+    if (!authAPI.isAdmin()) {
+      toast.error('Admin access required for model retraining');
+      navigate('/dashboard');
+      return;
+    }
+    
     // Confirmation dialog
     const confirmed = window.confirm(
       'Are you sure you want to retrain the model? This process may take several minutes and will update the current model with new training data.'
@@ -156,29 +207,46 @@ const Admin = () => {
     
     if (!confirmed) return;
     
+    console.log('Starting model retraining...');
     setRetraining(true);
     toast.info('Starting model retraining process... This may take a few minutes.');
     
     try {
       const result = await adminAPI.retrainModel();
-      toast.success(result.message || 'Model retrained successfully! 🎉');
+      
+      if (result.mock) {
+        toast.success(`${result.message} (Demo Mode)`, { duration: 6000 });
+      } else {
+        toast.success(result.message || 'Model retrained successfully! 🎉');
+      }
       
       // Refresh model info to show updated metrics
       await fetchModelInfo(false);
       
       // Additional success feedback
-      toast.success('Model information updated with new training results!');
+      if (!result.mock) {
+        toast.success('Model information updated with new training results!');
+      }
     } catch (error) {
       console.error('Retrain error:', error);
-      handleAPIError(error, 'Model retraining failed');
       
-      // Additional error context
-      if (error.response?.status === 500) {
-        toast.error('Server error during retraining. Please check the backend logs.');
-      } else if (error.response?.status === 404) {
-        toast.error('Retraining endpoint not found. Please check API configuration.');
-      } else if (error.code === 'NETWORK_ERROR') {
-        toast.error('Network error. Please check your connection and try again.');
+      if (error.message.includes('Admin access required')) {
+        toast.error(error.message);
+        navigate('/dashboard');
+      } else if (error.message.includes('Authentication required')) {
+        toast.error(error.message);
+        navigate('/login');
+      } else {
+        handleAPIError(error, 'Model retraining failed');
+        
+        // Additional error context
+        if (error.response?.status === 500) {
+          toast.error('Server error during retraining. Please check the backend logs.');
+        } else if (error.response?.status === 404) {
+          toast.error('Retraining endpoint not found. Please check API configuration.');
+        } else if (error.code === 'NETWORK_ERROR') {
+          toast.error('Network error. Please check your connection and try again.');
+        }
       }
     } finally {
       setRetraining(false);

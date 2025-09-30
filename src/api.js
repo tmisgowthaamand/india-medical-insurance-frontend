@@ -49,7 +49,17 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Only redirect to login if we're not already on login/signup pages
       const currentPath = window.location.pathname;
+      
+      // For admin routes, check if user is not admin (redirect to dashboard instead of login)
+      if (currentPath === '/admin' && !authAPI.isAdmin()) {
+        console.log('Non-admin user trying to access admin route, redirecting to dashboard');
+        window.location.href = '/dashboard';
+        return Promise.reject(error);
+      }
+      
+      // For other 401 errors, redirect to login
       if (!['/login', '/signup'].includes(currentPath)) {
+        console.log('Authentication failed, redirecting to login');
         localStorage.removeItem('access_token');
         localStorage.removeItem('email');
         localStorage.removeItem('is_admin');
@@ -193,7 +203,33 @@ export const authAPI = {
   },
 
   isAdmin: () => {
-    return localStorage.getItem('is_admin') === 'true';
+    const isAdmin = localStorage.getItem('is_admin') === 'true';
+    console.log('Admin check:', {
+      is_admin_value: localStorage.getItem('is_admin'),
+      is_admin_boolean: isAdmin,
+      email: localStorage.getItem('email'),
+      has_token: !!localStorage.getItem('access_token')
+    });
+    return isAdmin;
+  },
+
+  // Debug function to check authentication status
+  debugAuth: () => {
+    const authData = {
+      access_token: localStorage.getItem('access_token'),
+      email: localStorage.getItem('email'),
+      is_admin: localStorage.getItem('is_admin'),
+      isAuthenticated: !!localStorage.getItem('access_token'),
+      isAdmin: localStorage.getItem('is_admin') === 'true'
+    };
+    console.log('Authentication Debug:', authData);
+    return authData;
+  },
+
+  // Force admin status (for testing)
+  setAdminStatus: (isAdmin) => {
+    localStorage.setItem('is_admin', isAdmin.toString());
+    console.log('Admin status set to:', isAdmin);
   }
 };
 
@@ -268,6 +304,13 @@ export const predictionAPI = {
 export const adminAPI = {
   uploadDataset: async (file) => {
     try {
+      console.log('Attempting to upload dataset:', file.name);
+      
+      // Check if user is admin before making the request
+      if (!authAPI.isAdmin()) {
+        throw new Error('Admin access required for dataset upload');
+      }
+      
       const formData = new FormData();
       formData.append('file', file);
       
@@ -277,36 +320,69 @@ export const adminAPI = {
         },
         timeout: 30000, // 30 second timeout for file uploads
       });
+      
+      console.log('Upload successful:', response.data);
       return response.data;
     } catch (error) {
-      console.log('Upload API unavailable, simulating upload');
+      console.log('Upload error:', error.message);
       
-      // Mock response for when backend is unavailable
-      return {
-        success: true,
-        message: `Demo: File "${file.name}" upload simulated successfully! Backend unavailable - this is a demo response.`,
-        filename: file.name,
-        size: file.size,
-        mock: true
-      };
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please login as admin.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Admin access required for dataset upload.');
+      } else if (error.message.includes('Admin access required')) {
+        throw error; // Re-throw admin access error
+      } else {
+        console.log('Upload API unavailable, simulating upload');
+        
+        // Mock response for when backend is unavailable
+        return {
+          success: true,
+          message: `Demo: File "${file.name}" upload simulated successfully! Backend unavailable - this is a demo response.`,
+          filename: file.name,
+          size: file.size,
+          mock: true
+        };
+      }
     }
   },
 
   retrainModel: async () => {
     try {
+      console.log('Attempting to retrain model');
+      
+      // Check if user is admin before making the request
+      if (!authAPI.isAdmin()) {
+        throw new Error('Admin access required for model retraining');
+      }
+      
       const response = await api.post('/admin/retrain', {}, { timeout: 60000 }); // 60 second timeout for retraining
+      
+      console.log('Retrain successful:', response.data);
       return response.data;
     } catch (error) {
-      console.log('Retrain API unavailable, simulating retraining');
+      console.log('Retrain error:', error.message);
       
-      // Mock response for when backend is unavailable
-      return {
-        success: true,
-        message: 'Demo: Model retraining simulated successfully! Backend unavailable - this is a demo response.',
-        mock: true,
-        training_time: '2-3 minutes (simulated)',
-        new_accuracy: 0.93
-      };
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please login as admin.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Admin access required for model retraining.');
+      } else if (error.message.includes('Admin access required')) {
+        throw error; // Re-throw admin access error
+      } else {
+        console.log('Retrain API unavailable, simulating retraining');
+        
+        // Mock response for when backend is unavailable
+        return {
+          success: true,
+          message: 'Demo: Model retraining simulated successfully! Backend unavailable - this is a demo response.',
+          mock: true,
+          training_time: '2-3 minutes (simulated)',
+          new_accuracy: 0.93
+        };
+      }
     }
   }
 };
