@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #218838; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; width: 200px; }
+        .form-group { margin: 10px 0; }
+        label { display: inline-block; width: 120px; }
+    </style>
+</head>
+<body>
+    <h1>MediCare+ Signup Debug Tool</h1>
+    
+    <div class="form-group">
+        <label>Backend URL:</label>
+        <input type="text" id="backendUrl" value="http://localhost:8001" />
+    </div>
+    
+    <div class="form-group">
+        <label>Email:</label>
+        <input type="email" id="email" value="" placeholder="test@example.com" />
+    </div>
+    
+    <div class="form-group">
+        <label>Password:</label>
+        <input type="password" id="password" value="test123456" />
+    </div>
+    
+    <button onclick="generateRandomEmail()">Generate Random Email</button>
+    <button onclick="testSignup()">Test Signup</button>
+    <button onclick="testExistingEmail()">Test Existing Email</button>
+    <button class="danger" onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        function generateRandomEmail() {
+            const timestamp = Date.now();
+            const randomEmail = `test${timestamp}@example.com`;
+            document.getElementById('email').value = randomEmail;
+            addResult(`Generated random email: ${randomEmail}`, 'info');
+        }
+        
+        async function testSignup() {
+            const backendUrl = document.getElementById('backendUrl').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                addResult('❌ Please fill in email and password', 'error');
+                return;
+            }
+            
+            addResult(`Testing signup for ${email}...`, 'info');
+            
+            try {
+                const signupData = {
+                    email: email,
+                    password: password
+                };
+                
+                const response = await fetch(`${backendUrl}/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(signupData),
+                    mode: 'cors'
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    addResult(`✅ Signup successful! Message: ${data.message}`, 'success');
+                    addResult(`📧 Email: ${data.email}`, 'success');
+                } else {
+                    addResult(`❌ Signup failed (${response.status}): ${responseText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Signup request failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testExistingEmail() {
+            const backendUrl = document.getElementById('backendUrl').value;
+            
+            addResult('Testing signup with existing email (admin@example.com)...', 'info');
+            
+            try {
+                const signupData = {
+                    email: 'admin@example.com',
+                    password: 'test123456'
+                };
+                
+                const response = await fetch(`${backendUrl}/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(signupData),
+                    mode: 'cors'
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.status === 400) {
+                    addResult('✅ Existing email properly rejected (400 status)', 'success');
+                    addResult(`Response: ${responseText}`, 'info');
+                } else {
+                    addResult(`⚠️ Unexpected response for existing email (${response.status}): ${responseText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Existing email test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-generate random email on load
+        window.onload = function() {
+            addResult('🔍 Signup Debug Tool loaded. Generate a random email or enter your own to test.', 'info');
+            generateRandomEmail();
+        };
+    </script>
+</body>
+</html>

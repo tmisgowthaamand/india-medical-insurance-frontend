@@ -23,14 +23,44 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form data
+    if (!formData.email || !formData.password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await authAPI.login(formData.email, formData.password);
+      console.log('Attempting login with:', formData.email);
+      const response = await authAPI.login(formData.email, formData.password);
+      console.log('Login response:', response);
+      
       toast.success('Welcome back! Login successful!');
-      navigate('/dashboard');
+      
+      // Small delay to show success message
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 500);
+      
     } catch (error) {
-      handleAPIError(error, 'Login failed');
+      console.error('Login error:', error);
+      
+      // More specific error handling
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        toast.error('Connection timeout. The server may be slow. Please try again.');
+      } else if (error.response?.status === 401) {
+        toast.error('Invalid email or password. Please try again.');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        toast.error('Cannot connect to server. Please check if the backend is running.');
+      } else if (error.message?.includes('Network Error')) {
+        toast.error('Network connection failed. Please check your internet connection.');
+      } else {
+        handleAPIError(error, 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -202,6 +232,7 @@ const Login = () => {
           <div className="text-center text-sm text-gray-500 animate-fade-in delay-500">
             <p>Secure • AI-Powered • Real-time Analytics</p>
           </div>
+
         </div>
       </div>
 

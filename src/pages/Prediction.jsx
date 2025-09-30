@@ -169,12 +169,28 @@ const Prediction = () => {
       });
       
       if (response.ok) {
-        toast.success(`📧 Prediction report sent to ${email}!`);
+        const result = await response.json();
+        if (result.success) {
+          if (result.message.includes('demo') || result.message.includes('simulation')) {
+            toast.success(`📧 Demo: Email report simulated for ${email}! Check backend console for details.`);
+          } else {
+            toast.success(`📧 Prediction report sent to ${email}! Check your Gmail inbox.`, {
+              duration: 5000,
+            });
+          }
+        } else {
+          toast.error(`⚠️ ${result.message || 'Email configuration not available'}`);
+        }
       } else {
-        throw new Error('Failed to send email');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to send email');
       }
     } catch (error) {
-      toast.error('Failed to send email report. Please try again.');
+      if (error.message.includes('configuration')) {
+        toast.error('📧 Email service not configured. Contact administrator to enable email functionality.');
+      } else {
+        toast.error('Failed to send email report. Please try again.');
+      }
       console.error('Email error:', error);
     } finally {
       setLoading(false);

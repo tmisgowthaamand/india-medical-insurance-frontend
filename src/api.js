@@ -31,11 +31,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Add network error handling
+    if (!error.response) {
+      error.code = 'NETWORK_ERROR';
+      console.error('Network error - backend may be down:', error.message);
+    }
+    
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('email');
-      localStorage.removeItem('is_admin');
-      window.location.href = '/login';
+      // Only redirect to login if we're not already on login/signup pages
+      const currentPath = window.location.pathname;
+      if (!['/login', '/signup'].includes(currentPath)) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('email');
+        localStorage.removeItem('is_admin');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -44,27 +54,86 @@ api.interceptors.response.use(
 // Auth functions
 export const authAPI = {
   login: async (email, password) => {
+    console.log('API: Attempting login for:', email);
+    console.log('API: Backend URL:', API_BASE_URL);
+    
     const formData = new FormData();
     formData.append('username', email); // OAuth2 form expects 'username' field but we'll use email
     formData.append('password', password);
     
-    const response = await api.post('/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-    
-    const { access_token, email: userEmail, is_admin } = response.data;
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('email', userEmail);
-    localStorage.setItem('is_admin', is_admin);
-    
-    return response.data;
+    try {
+      const response = await api.post('/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        timeout: 30000, // 30 second timeout
+      });
+      
+      console.log('API: Login response received:', response.data);
+      
+      const { access_token, email: userEmail, is_admin } = response.data;
+      
+      if (!access_token) {
+        throw new Error('No access token received from server');
+      }
+      
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('email', userEmail);
+      localStorage.setItem('is_admin', is_admin);
+      
+      console.log('API: Login successful, token stored');
+      return response.data;
+      
+    } catch (error) {
+      console.error('API: Login error:', error);
+      
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout - server may be slow');
+      }
+      
+      throw error;
+    }
   },
 
   signup: async (email, password) => {
-    const response = await api.post('/signup', { email, password });
-    return response.data;
+    console.log('API: Attempting signup for:', email);
+    console.log('API: Backend URL:', API_BASE_URL);
+    
+    try {
+      const response = await api.post('/signup', { 
+        email: email.trim(), 
+        password: password 
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 second timeout
+      });
+      
+      console.log('API: Signup response received:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('API: Signup error:', error);
+      
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timeout - server may be slow');
+      }
+      
+      // Handle specific error cases
+      if (error.response?.status === 400) {
+        const message = error.response.data?.detail || error.response.data?.message || 'Invalid signup data';
+        console.log('Backend error detail:', message);
+        console.log('Full error response:', error.response.data);
+        throw new Error(message);
+      }
+      
+      if (error.response?.status === 409) {
+        throw new Error('Email already exists. Please use a different email.');
+      }
+      
+      throw error;
+    }
   },
 
   logout: () => {

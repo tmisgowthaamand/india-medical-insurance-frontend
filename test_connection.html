@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .status { font-weight: bold; font-size: 18px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>MediCare+ Backend Connection Test</h1>
+    
+    <div class="status" id="status">Testing connection...</div>
+    
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        const BACKEND_URL = 'http://localhost:8001';
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testConnection() {
+            updateStatus('Testing connection...', 'info');
+            addResult('Testing basic connection to backend...', 'info');
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch(`${BACKEND_URL}/`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    addResult(`✅ Backend connection successful (${response.status})`, 'success');
+                    updateStatus('Backend is accessible', 'success');
+                    return true;
+                } else {
+                    addResult(`⚠️ Backend responded with status ${response.status}`, 'error');
+                    updateStatus('Backend connection issues', 'error');
+                    return false;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    addResult('❌ Connection timeout (10 seconds)', 'error');
+                    updateStatus('Connection timeout', 'error');
+                } else {
+                    addResult(`❌ Connection failed: ${error.message}`, 'error');
+                    updateStatus('Connection failed', 'error');
+                }
+                return false;
+            }
+        }
+        
+        async function testLogin() {
+            addResult('Testing login endpoint...', 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('username', 'admin@example.com');
+                formData.append('password', 'admin123');
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                
+                const response = await fetch(`${BACKEND_URL}/login`, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    addResult(`✅ Login successful! Token: ${data.access_token?.substring(0, 20)}...`, 'success');
+                    updateStatus('Login working correctly', 'success');
+                } else {
+                    addResult(`❌ Login failed (${response.status}): ${responseText}`, 'error');
+                    updateStatus('Login endpoint issues', 'error');
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    addResult('❌ Login timeout (30 seconds)', 'error');
+                    updateStatus('Login timeout', 'error');
+                } else {
+                    addResult(`❌ Login request failed: ${error.message}`, 'error');
+                    updateStatus('Login request failed', 'error');
+                }
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = async function() {
+            addResult('🔍 Connection test tool loaded', 'info');
+            
+            // Test connection first
+            const connectionOk = await testConnection();
+            
+            if (connectionOk) {
+                // If connection is good, test login
+                setTimeout(() => {
+                    testLogin();
+                }, 1000);
+            } else {
+                addResult('⚠️ Skipping login test due to connection issues', 'info');
+                updateStatus('Fix connection issues first', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

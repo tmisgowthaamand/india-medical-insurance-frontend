@@ -23,28 +23,84 @@ const Signup = () => {
     });
   };
 
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setLoading(false);
+    toast.success('Form reset successfully');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate form data
+    if (!formData.email || !formData.password || !formData.confirmPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    // Remove password length restriction - allow any password
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
     setLoading(true);
 
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        toast.error('Request timed out. Please try again.');
+      }
+    }, 15000); // 15 second timeout
+
     try {
-      await authAPI.signup(formData.email, formData.password);
+      console.log('Attempting signup with:', formData.email);
+      const response = await authAPI.signup(formData.email, formData.password);
+      console.log('Signup response:', response);
+      
+      clearTimeout(timeoutId);
       toast.success('🎉 Account created successfully! Please login.');
-      navigate('/login');
+      
+      // Small delay to show success message
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
+      
     } catch (error) {
-      handleAPIError(error, 'Signup failed');
+      console.error('Signup error:', error);
+      
+      // More specific error handling
+      if (error.message?.includes('Email already exists') || error.message?.includes('already exists')) {
+        toast.error('This email is already registered. Please use a different email or try logging in.');
+      } else if (error.response?.status === 400) {
+        const message = error.response?.data?.detail || error.message || 'Invalid signup data';
+        toast.error(message);
+      } else if (error.response?.status === 409) {
+        toast.error('Email already exists. Please use a different email.');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        toast.error('Network error. Please check your connection.');
+      } else if (error.message) {
+        toast.error(error.message);
+      } else {
+        handleAPIError(error, 'Signup failed');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -161,7 +217,7 @@ const Signup = () => {
                     type={showPassword ? 'text' : 'password'}
                     required
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 group-hover:border-gray-400 bg-gray-50 focus:bg-white"
-                    placeholder="Create a password"
+                    placeholder="Create any password"
                     value={formData.password}
                     onChange={handleChange}
                   />
@@ -206,23 +262,35 @@ const Signup = () => {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-              >
-                {loading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Creating account...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <UserPlus className="w-5 h-5" />
-                    <span>Create Account</span>
-                  </div>
+              <div className="space-y-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Creating account...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <UserPlus className="w-5 h-5" />
+                      <span>Create Account</span>
+                    </div>
+                  )}
+                </button>
+
+                {loading && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  >
+                    Cancel & Reset
+                  </button>
                 )}
-              </button>
+              </div>
 
               <div className="text-center">
                 <span className="text-gray-600">
@@ -241,6 +309,25 @@ const Signup = () => {
           {/* Terms */}
           <div className="text-center text-sm text-gray-500 animate-fade-in delay-500">
             <p>By creating an account, you agree to our terms of service</p>
+          </div>
+
+          {/* Debug Info */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm animate-fade-in delay-600">
+            <h4 className="font-semibold text-emerald-800 mb-2">Signup Requirements:</h4>
+            <div className="space-y-1 text-emerald-700">
+              <p>• Valid email address format</p>
+              <p>• Password can be any length (your choice)</p>
+              <p>• Passwords must match</p>
+              <p>• Email must not be already registered</p>
+            </div>
+            {loading && (
+              <div className="mt-2 p-2 bg-blue-100 border border-blue-200 rounded text-blue-800">
+                <p className="text-xs">If signup is taking too long, check your network connection or try refreshing the page.</p>
+              </div>
+            )}
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+              <p className="text-xs"><strong>Note:</strong> If you get "Email already exists" error, try logging in instead or use a different email address.</p>
+            </div>
           </div>
         </div>
       </div>
