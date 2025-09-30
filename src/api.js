@@ -1,9 +1,11 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+// Determine API base URL with better production detection
+const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL || 
-  (window.location.hostname === 'localhost' ? 'http://localhost:8001' : 'https://india-medical-insurance-backend.onrender.com');
+  (isProduction ? 'https://india-medical-insurance-backend.onrender.com' : 'http://localhost:8001');
 
 console.log('API Configuration:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
