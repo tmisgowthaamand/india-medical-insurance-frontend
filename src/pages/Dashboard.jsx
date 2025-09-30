@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dashboardAPI, handleAPIError } from '../api';
 import { 
   Users, 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp, 
   Activity,
   RefreshCw,
@@ -162,7 +162,7 @@ const Dashboard = () => {
         <div className="card">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <IndianRupee className="h-8 w-8 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Avg Premium</p>
