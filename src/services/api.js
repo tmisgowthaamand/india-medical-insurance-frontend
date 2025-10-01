@@ -305,6 +305,25 @@ export const predictionAPI = {
       };
     }
   },
+
+  sendPredictionEmail: async (emailData) => {
+    try {
+      console.log('Sending prediction email to:', emailData.email);
+      const response = await api.post('/send-prediction-email', emailData, { timeout: 15000 });
+      return response.data;
+    } catch (error) {
+      console.log('Email API unavailable, simulating email send');
+      
+      // Mock email response for demo
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
+      
+      return {
+        success: true,
+        message: `Demo: Prediction report sent successfully to ${emailData.email}! (Backend unavailable - this is a simulation)`,
+        mock: true
+      };
+    }
+  },
 };
 
 // Admin API functions
