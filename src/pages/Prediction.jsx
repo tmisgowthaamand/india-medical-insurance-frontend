@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { predictionAPI, handleAPIError } from '../services/api';
+import { predictionAPI, handleAPIError, authAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import { 
   Brain, 
@@ -45,10 +45,17 @@ const Prediction = () => {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Scroll to top when component mounts
+  // Check authentication and scroll to top when component mounts
   useEffect(() => {
+    // Check if user is authenticated
+    if (!authAPI.isAuthenticated()) {
+      toast.error('Please login to access the prediction feature');
+      navigate('/login');
+      return;
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -62,20 +69,34 @@ const Prediction = () => {
     setLoading(true);
 
     try {
+      // Check authentication before making prediction
+      if (!authAPI.isAuthenticated()) {
+        toast.error('Please login to make predictions');
+        navigate('/login');
+        return;
+      }
+
       // Convert numeric fields
       const data = {
         ...formData,
         age: parseInt(formData.age),
         bmi: parseFloat(formData.bmi),
-        premium_annual_inr: formData.premium_annual_inr ? parseFloat(formData.premium_annual_inr) : null,
+        premium_annual_inr: parseFloat(formData.premium_annual_inr),
         email: formData.email || null,
       };
 
       const result = await predictionAPI.predict(data);
       setPrediction(result);
+      
       toast.success('🎉 Prediction generated successfully!');
     } catch (error) {
-      handleAPIError(error, 'Prediction failed');
+      if (error.response?.status === 401) {
+        toast.error('Authentication expired. Please login again.');
+        authAPI.logout();
+        navigate('/login');
+      } else {
+        handleAPIError(error, 'Prediction failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -157,148 +178,81 @@ const Prediction = () => {
     setLoading(true);
     
     try {
+      // Check if user is authenticated first
+      if (!authAPI.isAuthenticated()) {
+        toast.error('Please login to send email reports');
+        return;
+      }
+
       // Show immediate feedback
-      toast.loading('📧 Preparing email report...', { duration: 2000 });
+      toast.loading('📧 Preparing to send email report...', { id: 'email-loading' });
       
-      // Simulate email preparation time
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Prepare email data
+      const emailData = {
+        email: email,
+        prediction: predictionData,
+        patient_data: formData
+      };
+
+      console.log('📧 Sending email report to:', email);
       
-      // Try to send email with reasonable timeout (10 seconds)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      // Use the improved API with retry mechanism
+      const result = await predictionAPI.sendPredictionEmail(emailData);
       
-      let emailSent = false;
+      // Dismiss loading toast
+      toast.dismiss('email-loading');
       
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 
-          import.meta.env.VITE_API_BASE_URL || 
-          (import.meta.env.PROD || window.location.hostname !== 'localhost' ? 
-            'https://india-medical-insurance-backend.onrender.com' : 
-            'http://localhost:8001');
-        
-        const response = await fetch(`${apiUrl}/send-prediction-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            prediction: predictionData,
-            patient_data: formData
-          }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('Email API Response:', result);
-          
-          if (result.success) {
-            toast.success(`📧 ${result.message || `Prediction report sent to ${email}! Check your inbox.`}`, {
-              duration: 5000,
-            });
-            emailSent = true;
-          } else {
-            // API returned success=false, show error message
-            toast.error(`❌ ${result.message || 'Failed to send email. Please try again.'}`, {
-              duration: 5000,
-            });
-            console.error('Email sending failed:', result.message);
-          }
-        } else {
-          // HTTP error status
-          const errorText = await response.text();
-          console.error('Email API HTTP error:', response.status, errorText);
-          toast.error(`❌ Email service error (${response.status}). Please try again.`, {
-            duration: 5000,
-          });
-        }
-      } catch (apiError) {
-        clearTimeout(timeoutId);
-        console.log('Email API error:', apiError);
-        
-        if (apiError.name === 'AbortError') {
-          console.log('Email API request timed out, using fallback');
-        } else {
-          console.log('Email API unavailable, using mock email service');
-        }
-      }
-      
-      // If real email didn't work, use mock email service (always succeeds)
-      if (!emailSent) {
-        // Mock email service - simulate successful email sending
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate sending time
-        
-        // Create email content preview
-        const emailPreview = {
-          to: email,
-          subject: 'MediCare+ - Medical Insurance Prediction Report',
-          content: `
-Dear ${email.split('@')[0]},
-
-Your medical insurance prediction report has been generated successfully!
-
-📊 PREDICTION SUMMARY:
-• Predicted Claim Amount: ₹${predictionData.toLocaleString('en-IN')}
-• Confidence Level: High
-
-👤 PATIENT DETAILS:
-• Age: ${formData.age} years
-• BMI: ${formData.bmi}
-• Gender: ${formData.gender}
-• Region: ${formData.region}
-• Smoker: ${formData.smoker}
-• Annual Premium: ₹${parseInt(formData.premium_annual_inr).toLocaleString('en-IN')}
-
-🏥 RISK ASSESSMENT:
-Based on your profile, our AI model has analyzed various risk factors to provide this prediction.
-
-📋 NEXT STEPS:
-1. Review the detailed analysis in your dashboard
-2. Consult with healthcare providers if needed
-3. Consider preventive measures for better health outcomes
-
-This email was generated by MediCare+ AI Prediction System.
-Report generated on: ${new Date().toLocaleString('en-IN')}
-
-Best regards,
-MediCare+ Team
-          `,
-          timestamp: new Date().toLocaleString('en-IN'),
-          status: 'delivered'
-        };
-        
-        // Log email content for demo purposes
-        console.log('📧 Email Successfully Sent:', emailPreview);
-        
-        // Show realistic success message
-        toast.success(
-          `📧 Email report sent successfully to ${email}!
-          
-✅ Report delivered to your Gmail inbox
-📊 Includes detailed prediction analysis
-📋 Contains risk assessment and recommendations
-
-Check your email for the complete report!`, 
-          {
-            duration: 6000,
-            style: {
-              maxWidth: '450px',
+      if (result.success) {
+        if (result.mock) {
+          // Mock/demo response
+          toast.error(
+            `⚠️ DEMO MODE: Email simulation for ${email}
+            
+🔧 Backend service unavailable
+📧 This is a demonstration only
+💡 Check backend Gmail configuration`, 
+            {
+              duration: 6000,
+              style: {
+                maxWidth: '400px',
+              }
             }
-          }
-        );
-        
-        // Show additional helpful info
-        setTimeout(() => {
-          toast('📱 Tip: Check your spam folder if you don\'t see the email in your inbox!', {
+          );
+          
+          // Show additional helpful info
+          setTimeout(() => {
+            toast('💡 To receive real emails: Check Gmail credentials in backend .env file', {
+              duration: 4000,
+              icon: '⚙️'
+            });
+          }, 2000);
+        } else {
+          // Real email sent successfully
+          toast.success(`📧 Email sent successfully to ${email}! Check your inbox and spam folder.`, {
             duration: 4000,
-            icon: 'ℹ️'
           });
-        }, 3000);
+          
+          // Show additional info for real email
+          setTimeout(() => {
+            toast('📬 If you don\'t see the email, check your spam/junk folder!', {
+              duration: 3000,
+              icon: 'ℹ️'
+            });
+          }, 2000);
+        }
+      } else {
+        // Email failed
+        toast.error(`❌ Failed to send email: ${result.message || 'Unknown error'}`, {
+          duration: 4000,
+        });
       }
       
+    } catch (error) {
+      console.error('Email sending error:', error);
+      toast.dismiss('email-loading');
+      toast.error(`❌ Email error: ${error.message}`, {
+        duration: 4000,
+      });
     } finally {
       setLoading(false);
     }
@@ -660,23 +614,25 @@ For medical consultation purposes only
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
                   <label htmlFor="premium_annual_inr" className="block text-sm font-medium text-gray-700 mb-2">
-                    Annual Premium (₹)
+                    Annual Premium (₹) *
                   </label>
                   <div className="relative">
                     <input
                       type="number"
                       id="premium_annual_inr"
                       name="premium_annual_inr"
-                      min="0"
+                      required
+                      min="1000"
+                      max="1000000"
                       className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white group-hover:border-gray-400"
-                      placeholder="e.g., 25000 (optional)"
+                      placeholder="e.g., 25000"
                       value={formData.premium_annual_inr}
                       onChange={handleChange}
                     />
                     <BarChart3 className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
                   </div>
                   <p className="mt-1 text-sm text-gray-500">
-                    Leave empty if unknown - AI will estimate
+                    Enter your annual insurance premium amount
                   </p>
                 </div>
 

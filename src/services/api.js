@@ -1,11 +1,12 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// Determine API base URL with better production detection
-const isProduction = import.meta.env.PROD || window.location.hostname !== 'localhost';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  import.meta.env.VITE_API_BASE_URL || 
-  (isProduction ? 'https://india-medical-insurance-backend.onrender.com' : 'http://localhost:8001');
+// Force localhost when running locally to avoid Render backend issues
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8001'
+  : import.meta.env.VITE_API_URL || 
+    import.meta.env.VITE_API_BASE_URL || 
+    'https://india-medical-insurance-backend.onrender.com';
 
 console.log('API Configuration:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
@@ -267,8 +268,13 @@ export const predictionAPI = {
     } catch (error) {
       console.log('Prediction API unavailable, using mock prediction');
       
-      // Mock prediction calculation based on input data
+      // Mock prediction calculation based on input data (DETERMINISTIC)
       const { age, bmi, gender, smoker, region, premium_annual_inr } = data;
+      
+      // Create a deterministic "random" factor based on input data
+      const dataHash = age + bmi * 10 + (gender === 'Male' ? 100 : 200) + 
+                      (smoker === 'Yes' ? 1000 : 0) + premium_annual_inr;
+      const deterministicFactor = 0.85 + ((dataHash % 100) / 100) * 0.3; // Range: 0.85 to 1.15
       
       // Simple mock calculation
       let baseClaim = 15000;
@@ -291,11 +297,18 @@ export const predictionAPI = {
       // Premium factor
       baseClaim *= (premium_annual_inr / 25000);
       
-      // Add some randomness
-      baseClaim *= (0.8 + Math.random() * 0.4);
+      // Apply deterministic variation (same input = same result)
+      baseClaim *= deterministicFactor;
       
       const prediction = Math.round(baseClaim);
-      const confidence = Math.min(0.95, Math.max(0.65, 0.85 + (Math.random() - 0.5) * 0.2));
+      
+      // Deterministic confidence based on input factors
+      let confidenceBase = 0.85;
+      if (age > 60) confidenceBase -= 0.05; // Lower confidence for very high age
+      if (bmi < 18.5 || bmi > 35) confidenceBase -= 0.03; // Lower confidence for extreme BMI
+      if (smoker === 'Yes') confidenceBase -= 0.02; // Lower confidence for smokers
+      
+      const confidence = Math.min(0.95, Math.max(0.65, confidenceBase));
       
       return {
         prediction: prediction,
@@ -306,21 +319,72 @@ export const predictionAPI = {
     }
   },
 
-  sendPredictionEmail: async (emailData) => {
+  sendPredictionEmail: async (emailData, retryCount = 0) => {
+    const maxRetries = 2;
+    const baseTimeout = 30000; // 30 seconds base timeout
+    const renderTimeout = 90000; // 90 seconds for Render services
+    
     try {
-      console.log('Sending prediction email to:', emailData.email);
-      const response = await api.post('/send-prediction-email', emailData, { timeout: 15000 });
+      console.log(`Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      
+      // Determine if this is a Render service
+      const isRenderService = API_BASE_URL.includes('onrender.com');
+      const timeout = isRenderService ? renderTimeout : baseTimeout;
+      
+      console.log(`Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
+      
+      // If it's a Render service and first attempt, try to wake it up first
+      if (isRenderService && retryCount === 0) {
+        try {
+          console.log('🏥 Pinging health endpoint to wake up Render service...');
+          await api.get('/health', { timeout: 20000 });
+          console.log('✅ Service is awake');
+          // Small delay to ensure service is fully ready
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (healthError) {
+          console.log('⚠️ Health check failed, but continuing:', healthError.message);
+        }
+      }
+      
+      const response = await api.post('/send-prediction-email', emailData, { 
+        timeout: timeout,
+        // Add retry configuration
+        'axios-retry': {
+          retries: 0 // Handle retries manually for better control
+        }
+      });
+      
+      console.log('✅ Email sent successfully:', response.data);
       return response.data;
+      
     } catch (error) {
-      console.log('Email API unavailable, simulating email send');
+      console.log(`❌ Email API error (attempt ${retryCount + 1}):`, error.message);
+      
+      // Check if we should retry
+      const shouldRetry = retryCount < maxRetries && (
+        error.code === 'ECONNABORTED' || // Timeout
+        error.message.includes('timeout') ||
+        error.message.includes('Network Error') ||
+        error.response?.status >= 500 // Server errors
+      );
+      
+      if (shouldRetry) {
+        console.log(`🔄 Retrying email send in ${(retryCount + 1) * 2} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        return predictionAPI.sendPredictionEmail(emailData, retryCount + 1);
+      }
+      
+      // If all retries failed, provide mock response
+      console.log('📧 All email attempts failed, providing mock response');
       
       // Mock email response for demo
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       return {
         success: true,
-        message: `Demo: Prediction report sent successfully to ${emailData.email}! (Backend unavailable - this is a simulation)`,
-        mock: true
+        message: `Demo: Prediction report sent successfully to ${emailData.email}! (Backend unavailable after ${retryCount + 1} attempts - this is a simulation)`,
+        mock: true,
+        error: error.message
       };
     }
   },
