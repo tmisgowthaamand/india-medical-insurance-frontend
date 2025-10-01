@@ -1,17 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { authAPI } from './api';
+import { authAPI } from './services/api';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 // Import components
-import NavBar from './components/NavBar';
-import ScrollToTop from './components/ScrollToTop';
-import ScrollToTopButton from './components/ScrollToTopButton';
+import NavBar from './components/layout/NavBar';
+import ScrollToTop from './components/ui/ScrollToTop';
+import ScrollToTopButton from './components/ui/ScrollToTopButton';
 import TitleProvider from './components/TitleProvider';
-import AppLoader from './components/AppLoader';
+import AppLoader from './components/common/AppLoader';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import TestDashboard from './pages/TestDashboard';
 import Prediction from './pages/Prediction';
 import ClaimsAnalysis from './pages/ClaimsAnalysis';
 import Admin from './pages/Admin';
@@ -51,6 +52,14 @@ function App() {
                   </main>
                   <ScrollToTopButton />
                 </div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/test-dashboard"
+            element={
+              <ProtectedRoute>
+                <TestDashboard />
               </ProtectedRoute>
             }
           />

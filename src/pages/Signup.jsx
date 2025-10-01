@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI, handleAPIError } from '../api';
+import { authAPI, handleAPIError } from '../services/api';
 import { Shield, Eye, EyeOff, UserPlus, Heart, Activity, Users, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Logo, { LogoVariant } from '../components/Logo';
+import Logo, { LogoVariant } from '../components/common/Logo';
 
 const Signup = () => {
   const [formData, setFormData] = useState({

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI, handleAPIError } from '../api';
+import { authAPI, handleAPIError } from '../services/api';
 import { Shield, Eye, EyeOff, LogIn, Heart, Activity, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Logo, { LogoVariant } from '../components/Logo';
+import Logo, { LogoVariant } from '../components/common/Logo';
 
 const Login = () => {
   const [formData, setFormData] = useState({

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminAPI, dashboardAPI, handleAPIError, authAPI } from '../api';
+import { adminAPI, dashboardAPI, handleAPIError, authAPI } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import { 
   Settings, 
@@ -25,7 +25,7 @@ import {
   Home
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Logo from '../components/Logo';
+import Logo from '../components/common/Logo';
 import PageLoader from '../components/PageLoader';
 
 const Admin = () => {

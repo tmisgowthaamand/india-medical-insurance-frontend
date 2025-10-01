@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardAPI, adminAPI, authAPI, handleAPIError } from '../api';
+import { dashboardAPI, adminAPI, authAPI, handleAPIError } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import { 
   TrendingUp, 
@@ -24,7 +24,7 @@ import {
   ArrowLeft,
   Home
 } from 'lucide-react';
-import Logo from '../components/Logo';
+import Logo from '../components/common/Logo';
 import {
   BarChart,
   Bar,
@@ -53,6 +53,7 @@ const ClaimsAnalysis = () => {
   const [uploading, setUploading] = useState(false);
   const [retraining, setRetraining] = useState(false);
   const [modelInfo, setModelInfo] = useState(null);
+  const [statsUpdating, setStatsUpdating] = useState(false);
   const isAdmin = authAPI.isAdmin();
 
   // Mock data for when endpoints are not available
@@ -202,32 +203,130 @@ const ClaimsAnalysis = () => {
       return;
     }
 
+    // Check admin status before attempting upload
+    if (!authAPI.isAdmin()) {
+      toast.error('Admin access required for dataset upload');
+      return;
+    }
+
     setUploading(true);
     try {
       const result = await adminAPI.uploadDataset(uploadFile);
       toast.success(result.message || 'Dataset uploaded and model retrained successfully!');
+      
+      // If this is a mock response (demo mode), update stats with new realistic values
+      if (result.mock && result.dataset_rows) {
+        setStatsUpdating(true);
+        
+        // Simulate stats calculation delay for better UX
+        setTimeout(() => {
+          const newStats = {
+            total_policies: result.dataset_rows,
+            avg_premium: Math.floor(20000 + Math.random() * 20000), // Random between 20K-40K
+            avg_claim: Math.floor(12000 + Math.random() * 15000), // Random between 12K-27K
+            avg_age: Math.floor(30 + Math.random() * 15), // Random between 30-45
+            avg_bmi: Math.floor(22 + Math.random() * 6), // Random between 22-28
+            smoker_percentage: Math.floor(15 + Math.random() * 15) // Random between 15-30%
+          };
+          
+          // Update stats with animation
+          setStats(newStats);
+          setStatsUpdating(false);
+        
+          // Also generate new analysis data based on the new stats
+          const newAnalysisData = {
+            ...mockAnalysisData,
+            age_groups: {
+              claim_amount_inr: {
+                '18-25': newStats.avg_claim * 0.8,
+                '26-35': newStats.avg_claim * 0.9,
+                '36-45': newStats.avg_claim * 1.0,
+                '46-55': newStats.avg_claim * 1.2,
+                '56+': newStats.avg_claim * 1.4
+              },
+              premium_annual_inr: {
+                '18-25': newStats.avg_premium * 0.8,
+                '26-35': newStats.avg_premium * 0.9,
+                '36-45': newStats.avg_premium * 1.0,
+                '46-55': newStats.avg_premium * 1.2,
+                '56+': newStats.avg_premium * 1.4
+              }
+            }
+          };
+          setAnalysisData(newAnalysisData);
+          
+          toast.success(`Stats updated! New dataset has ${result.dataset_rows} policies with avg claim of ₹${newStats.avg_claim.toLocaleString()}`);
+        }, 1500); // 1.5 second delay
+      }
+      
       setUploadFile(null);
       // Reset file input
       const fileInput = document.getElementById('file-upload-claims');
       if (fileInput) fileInput.value = '';
-      // Refresh data
+      
+      // Refresh data from backend (will use mock data if backend unavailable)
       await fetchData();
     } catch (error) {
-      handleAPIError(error, 'Upload failed');
+      console.error('Upload error:', error);
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please login as admin and try again.');
+      } else if (error.response?.status === 403) {
+        toast.error('Admin access required for dataset upload.');
+      } else if (error.message?.includes('Admin access required')) {
+        toast.error('Admin access required for dataset upload.');
+      } else {
+        handleAPIError(error, 'Upload failed');
+      }
     } finally {
       setUploading(false);
     }
   };
 
   const handleRetrain = async () => {
+    // Check admin status before attempting retrain
+    if (!authAPI.isAdmin()) {
+      toast.error('Admin access required for model retraining');
+      return;
+    }
+
     setRetraining(true);
     try {
       const result = await adminAPI.retrainModel();
       toast.success(result.message || 'Model retrained successfully!');
-      // Refresh data
+      
+      // If this is a mock response (demo mode), update model info with new values
+      if (result.mock && result.new_accuracy) {
+        const newModelInfo = {
+          status: "Model loaded",
+          test_r2: result.new_accuracy,
+          test_rmse: Math.floor(3000 + Math.random() * 2000), // Random RMSE between 3000-5000
+          training_date: new Date().toISOString().split('T')[0], // Today's date
+          training_samples: result.samples_used || Math.floor(800 + Math.random() * 500)
+        };
+        
+        // Update model info immediately
+        setModelInfo(newModelInfo);
+        
+        toast.success(`Model updated! New accuracy: ${(result.new_accuracy * 100).toFixed(1)}% with ${newModelInfo.training_samples} samples`);
+      }
+      
+      // Refresh data from backend (will use mock data if backend unavailable)
       await fetchData();
     } catch (error) {
-      handleAPIError(error, 'Retraining failed');
+      console.error('Retrain error:', error);
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please login as admin and try again.');
+      } else if (error.response?.status === 403) {
+        toast.error('Admin access required for model retraining.');
+      } else if (error.message?.includes('Admin access required')) {
+        toast.error('Admin access required for model retraining.');
+      } else {
+        handleAPIError(error, 'Retraining failed');
+      }
     } finally {
       setRetraining(false);
     }
@@ -385,43 +484,43 @@ const ClaimsAnalysis = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card">
+        <div className={`card ${statsUpdating ? 'animate-pulse bg-green-50' : ''}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <IndianRupee className="h-8 w-8 text-green-600" />
+              <IndianRupee className={`h-8 w-8 ${statsUpdating ? 'text-green-500 animate-spin' : 'text-green-600'}`} />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Avg Claim Amount</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {formatCurrency(stats.avg_claim)}
+              <p className={`text-2xl font-semibold ${statsUpdating ? 'text-green-700' : 'text-gray-900'}`}>
+                {statsUpdating ? 'Updating...' : formatCurrency(stats.avg_claim)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className={`card ${statsUpdating ? 'animate-pulse bg-blue-50' : ''}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
+              <BarChart3 className={`h-8 w-8 ${statsUpdating ? 'text-blue-500 animate-spin' : 'text-blue-600'}`} />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Claim Ratio</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {((stats.avg_claim / stats.avg_premium) * 100).toFixed(1)}%
+              <p className={`text-2xl font-semibold ${statsUpdating ? 'text-blue-700' : 'text-gray-900'}`}>
+                {statsUpdating ? 'Updating...' : `${((stats.avg_claim / stats.avg_premium) * 100).toFixed(1)}%`}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className={`card ${statsUpdating ? 'animate-pulse bg-purple-50' : ''}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Users className="h-8 w-8 text-purple-600" />
+              <Users className={`h-8 w-8 ${statsUpdating ? 'text-purple-500 animate-spin' : 'text-purple-600'}`} />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Policies</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {stats.total_policies.toLocaleString()}
+              <p className={`text-2xl font-semibold ${statsUpdating ? 'text-purple-700' : 'text-gray-900'}`}>
+                {statsUpdating ? 'Updating...' : stats.total_policies.toLocaleString()}
               </p>
             </div>
           </div>
@@ -429,14 +528,21 @@ const ClaimsAnalysis = () => {
       </div>
 
       {/* Admin Controls */}
+      
       {isAdmin && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Dataset Upload */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Upload className="h-5 w-5 mr-2" />
-              Upload New Dataset
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Upload className="h-5 w-5 mr-2" />
+                Upload New Dataset
+              </h3>
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                <CheckCircle className="h-4 w-4" />
+                <span>Admin Access</span>
+              </div>
+            </div>
             
             <div className="space-y-4">
               <div>
@@ -476,10 +582,16 @@ const ClaimsAnalysis = () => {
 
           {/* Model Training */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Brain className="h-5 w-5 mr-2" />
-              Model Training
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Brain className="h-5 w-5 mr-2" />
+                Model Training
+              </h3>
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                <CheckCircle className="h-4 w-4" />
+                <span>Admin Access</span>
+              </div>
+            </div>
             
             <div className="space-y-4">
               {modelInfo && (

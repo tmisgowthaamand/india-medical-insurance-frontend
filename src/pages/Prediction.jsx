@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { predictionAPI, handleAPIError } from '../api';
+import { predictionAPI, handleAPIError } from '../services/api';
 import Breadcrumb from '../components/Breadcrumb';
 import { 
   Brain, 
@@ -29,7 +29,7 @@ import {
   Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Logo from '../components/Logo';
+import Logo from '../components/common/Logo';
 
 const Prediction = () => {
   const navigate = useNavigate();
