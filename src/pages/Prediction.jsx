@@ -228,20 +228,61 @@ const Prediction = () => {
       
       // Show HONEST feedback - success only when email actually delivered
       if (result.success) {
-        toast.success(
-          `✅ Email delivered successfully to ${email}!
-          
+        // Show HONEST feedback based on actual backend response
+        const message = result.message || 'Email processed';
+        const provider = result.provider || 'Unknown';
+        
+        // Check if email was actually sent or just stored locally
+        if (message.includes('stored locally') || message.includes('Local Storage')) {
+          // Email was NOT sent - show warning
+          toast.error(
+            `⚠️ Email NOT delivered to ${email}
+            
+📁 Email stored locally (not sent to Gmail)
+🔧 Email service not configured properly
+⏱️ Processing time: ${emailDuration}s
+💡 Use Download option to save report`, 
+            {
+              duration: 12000,
+              style: {
+                maxWidth: '500px',
+                background: '#FFA500',
+                color: 'white'
+              }
+            }
+          );
+        } else if (message.includes('SendGrid') || message.includes('Mailgun') || provider.includes('SendGrid') || provider.includes('Mailgun')) {
+          // Email was actually sent via real provider
+          toast.success(
+            `✅ Email delivered successfully to ${email}!
+            
 📧 Check your Gmail inbox now
 📬 Subject: "MediCare+ Medical Insurance Report"
-⏱️ Delivered in ${emailDuration}s
+⏱️ Delivered in ${emailDuration}s via ${provider}
 💡 Check spam folder if not in inbox`, 
-          {
-            duration: 8000,
-            style: {
-              maxWidth: '500px',
+            {
+              duration: 8000,
+              style: {
+                maxWidth: '500px',
+              }
             }
-          }
-        );
+          );
+        } else {
+          // Generic success but unclear delivery status
+          toast.success(
+            `✅ Email processed for ${email}
+            
+📧 ${message}
+⏱️ Processing time: ${emailDuration}s
+💡 Check Gmail inbox and spam folder`, 
+            {
+              duration: 8000,
+              style: {
+                maxWidth: '500px',
+              }
+            }
+          );
+        }
       } else {
         // Show HONEST error message when email fails
         toast.error(
