@@ -229,14 +229,32 @@ const Prediction = () => {
       toast.dismiss('email-loading');
       
       if (result.success) {
-        if (result.mock) {
-          // Mock/demo response
+        // Real email sent successfully
+        toast.success(
+          `✅ Email sent successfully to ${email} in ${emailDuration}s!
+          
+📧 Check your Gmail inbox for the prediction report
+📬 Subject: "MediCare+ Medical Insurance Prediction Report"
+💡 If not in inbox, check spam/junk folder`, 
+          {
+            duration: 8000,
+            style: {
+              maxWidth: '450px',
+            }
+          }
+        );
+      } else {
+        // Email failed - show specific error message
+        const errorMessage = result.message || 'Unknown error occurred';
+        
+        if (result.demo_mode || errorMessage.includes('not configured')) {
+          // Configuration issue
           toast.error(
-            `⚠️ DEMO MODE: Email simulation completed in ${emailDuration}s
+            `⚠️ Email Service Not Configured
             
-🔧 Backend email service unavailable
+🔧 Gmail credentials are required to send emails
 📧 Report generated but not sent
-💡 Configure Gmail credentials to enable real emails`, 
+💡 Use Download option to save report locally`, 
             {
               duration: 8000,
               style: {
@@ -244,61 +262,36 @@ const Prediction = () => {
               }
             }
           );
-          
-          // Show additional helpful info
-          setTimeout(() => {
-            toast('💡 To enable real emails: Set GMAIL_EMAIL and GMAIL_APP_PASSWORD in backend .env', {
-              duration: 5000,
-              icon: '⚙️'
-            });
-          }, 3000);
-        } else {
-          // Real email sent successfully
-          toast.success(
-            `📧 Email sent successfully to ${email} in ${emailDuration}s!
+        } else if (errorMessage.includes('timeout')) {
+          // Timeout error
+          toast.error(
+            `⏱️ Email sending timed out in ${emailDuration}s
             
-✅ Check your inbox for the prediction report
-📬 If not in inbox, check spam/junk folder
-🏥 Subject: "MediCare+ Medical Insurance Prediction Report"`, 
+🌐 Please check your internet connection
+🔄 Try again in a few moments
+💡 Use Download option as backup`, 
             {
-              duration: 6000,
+              duration: 8000,
               style: {
                 maxWidth: '450px',
               }
             }
           );
-          
-          // Show additional helpful tips
-          setTimeout(() => {
-            toast('💡 Pro tip: Add our sender email to your contacts to avoid spam filtering', {
-              duration: 4000,
-              icon: '📮'
-            });
-          }, 3000);
-          
-          // Show final reminder
-          setTimeout(() => {
-            toast('📱 Email should arrive within 1-2 minutes. Check all folders!', {
-              duration: 3000,
-              icon: '⏰'
-            });
-          }, 6000);
-        }
-      } else {
-        // Email failed
-        toast.error(
-          `❌ Failed to send email in ${emailDuration}s
-          
-Error: ${result.message || 'Unknown error'}
-📝 Report data has been saved locally
+        } else {
+          // Other errors
+          toast.error(
+            `❌ Failed to send email in ${emailDuration}s
+            
+${errorMessage}
 💡 Try again or use Download option`, 
-          {
-            duration: 6000,
-            style: {
-              maxWidth: '400px',
+            {
+              duration: 8000,
+              style: {
+                maxWidth: '450px',
+              }
             }
-          }
-        );
+          );
+        }
       }
       
     } catch (error) {
@@ -306,15 +299,15 @@ Error: ${result.message || 'Unknown error'}
       console.error('Email sending error:', error);
       toast.dismiss('email-loading');
       toast.error(
-        `❌ Email service error after ${emailDuration}s
+        `❌ Network error after ${emailDuration}s
         
-${error.message}
-📝 Report saved locally as backup
-💡 Try download option instead`, 
+🌐 Unable to connect to email service
+🔄 Please check your internet connection
+💡 Try again or use Download option`, 
         {
-          duration: 6000,
+          duration: 8000,
           style: {
-            maxWidth: '400px',
+            maxWidth: '450px',
           }
         }
       );
