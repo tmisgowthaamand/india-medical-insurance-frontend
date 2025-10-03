@@ -6,7 +6,7 @@ const API_BASE_URL = window.location.hostname === 'localhost' || window.location
   ? 'http://localhost:8001'
   : import.meta.env.VITE_API_URL || 
     import.meta.env.VITE_API_BASE_URL || 
-    'https://india-medical-insurance-backend.onrender.com';
+    'https://srv-d3b668ogjchc73f9ece0-latest.onrender.com';
 
 console.log('API Configuration:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
@@ -320,32 +320,41 @@ export const predictionAPI = {
   },
 
   sendPredictionEmail: async (emailData, retryCount = 0) => {
-    const maxRetries = 2;
-    const baseTimeout = 30000; // 30 seconds base timeout
-    const renderTimeout = 90000; // 90 seconds for Render services
+    const maxRetries = 3; // Increased retries for Render cold starts
+    const baseTimeout = 45000; // 45 seconds base timeout
+    const renderTimeout = 120000; // 2 minutes for Render services (cold starts can take 60-90s)
     
     try {
-      console.log(`Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(`🚀 Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
       
       // Determine if this is a Render service
       const isRenderService = API_BASE_URL.includes('onrender.com');
       const timeout = isRenderService ? renderTimeout : baseTimeout;
       
-      console.log(`Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
+      console.log(`⏱️ Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
       
-      // If it's a Render service and first attempt, try to wake it up first
-      if (isRenderService && retryCount === 0) {
+      // If it's a Render service, try to wake it up first with multiple attempts
+      if (isRenderService) {
         try {
-          console.log('🏥 Pinging health endpoint to wake up Render service...');
-          await api.get('/health', { timeout: 20000 });
-          console.log('✅ Service is awake');
-          // Small delay to ensure service is fully ready
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          console.log('🏥 Waking up Render service (this may take 60-90 seconds for cold starts)...');
+          
+          // Try health check with extended timeout for cold starts
+          await api.get('/health', { timeout: 60000 }); // 60 seconds for health check
+          console.log('✅ Service is awake and ready');
+          
+          // Give service extra time to fully initialize after cold start
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
         } catch (healthError) {
-          console.log('⚠️ Health check failed, but continuing:', healthError.message);
+          console.log('⚠️ Health check failed, but continuing with email request:', healthError.message);
+          
+          // Even if health check fails, the service might still work for the actual request
+          // Give it some time to potentially wake up
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
       
+      console.log('📧 Sending email request to backend...');
       const response = await api.post('/send-prediction-email', emailData, { 
         timeout: timeout,
         // Add retry configuration
@@ -369,8 +378,11 @@ export const predictionAPI = {
       );
       
       if (shouldRetry) {
-        console.log(`🔄 Retrying email send in ${(retryCount + 1) * 2} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        const isRenderService = API_BASE_URL.includes('onrender.com');
+        const waitTime = isRenderService ? (retryCount + 1) * 5000 : (retryCount + 1) * 2000; // Longer waits for Render
+        
+        console.log(`🔄 Retrying email send in ${waitTime / 1000} seconds... (${isRenderService ? 'Render service' : 'Local service'})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         return predictionAPI.sendPredictionEmail(emailData, retryCount + 1);
       }
       
