@@ -21,6 +21,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 0, // No global timeout - let individual requests set their own
 });
 
 // Request interceptor to add auth token
@@ -320,46 +321,47 @@ export const predictionAPI = {
   },
 
   sendPredictionEmail: async (emailData, retryCount = 0) => {
-    const maxRetries = 3; // Increased retries for Render cold starts
-    const baseTimeout = 45000; // 45 seconds base timeout
-    const renderTimeout = 120000; // 2 minutes for Render services (cold starts can take 60-90s)
+    const maxRetries = 3;
+    const baseTimeout = 60000; // 60 seconds base timeout
+    const renderTimeout = 150000; // 2.5 minutes for Render services
     
     try {
-      console.log(`🚀 Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(`Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
       
       // Determine if this is a Render service
       const isRenderService = API_BASE_URL.includes('onrender.com');
       const timeout = isRenderService ? renderTimeout : baseTimeout;
       
-      console.log(`⏱️ Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
+      console.log(`Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
       
-      // If it's a Render service, try to wake it up first with multiple attempts
+      // For Render services, try to wake up the service first
       if (isRenderService) {
         try {
-          console.log('🏥 Waking up Render service (this may take 60-90 seconds for cold starts)...');
+          console.log('🏥 Pinging health endpoint to wake up Render service...');
           
-          // Try health check with extended timeout for cold starts
-          await api.get('/health', { timeout: 60000 }); // 60 seconds for health check
-          console.log('✅ Service is awake and ready');
+          // Create a separate axios instance for health check with its own timeout
+          const healthResponse = await api.get('/health', { 
+            timeout: 45000, // 45 seconds for health check
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
           
-          // Give service extra time to fully initialize after cold start
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          console.log('✅ Service is awake');
           
         } catch (healthError) {
-          console.log('⚠️ Health check failed, but continuing with email request:', healthError.message);
-          
-          // Even if health check fails, the service might still work for the actual request
-          // Give it some time to potentially wake up
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log('⚠️ Health check failed, but continuing:', healthError.message);
+          // Continue with email request even if health check fails
         }
       }
       
       console.log('📧 Sending email request to backend...');
+      
+      // Create email request with proper timeout
       const response = await api.post('/send-prediction-email', emailData, { 
         timeout: timeout,
-        // Add retry configuration
-        'axios-retry': {
-          retries: 0 // Handle retries manually for better control
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
       
@@ -374,28 +376,24 @@ export const predictionAPI = {
         error.code === 'ECONNABORTED' || // Timeout
         error.message.includes('timeout') ||
         error.message.includes('Network Error') ||
+        !error.response || // Network error
         error.response?.status >= 500 // Server errors
       );
       
       if (shouldRetry) {
-        const isRenderService = API_BASE_URL.includes('onrender.com');
-        const waitTime = isRenderService ? (retryCount + 1) * 5000 : (retryCount + 1) * 2000; // Longer waits for Render
+        const waitTime = (retryCount + 1) * 3000; // 3, 6, 9 seconds
         
-        console.log(`🔄 Retrying email send in ${waitTime / 1000} seconds... (${isRenderService ? 'Render service' : 'Local service'})`);
+        console.log(`🔄 Retrying email send in ${waitTime / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         return predictionAPI.sendPredictionEmail(emailData, retryCount + 1);
       }
       
-      // If all retries failed, provide mock response
-      console.log('📧 All email attempts failed, providing mock response');
-      
-      // Mock email response for demo
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // If all retries failed, return error
+      console.log('📧 All email attempts failed');
       
       return {
-        success: true,
-        message: `Demo: Prediction report sent successfully to ${emailData.email}! (Backend unavailable after ${retryCount + 1} attempts - this is a simulation)`,
-        mock: true,
+        success: false,
+        message: `❌ Email delivery failed after ${retryCount + 1} attempts: ${error.message}. Please check your internet connection and try again.`,
         error: error.message
       };
     }
