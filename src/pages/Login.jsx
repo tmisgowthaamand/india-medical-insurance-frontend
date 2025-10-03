@@ -48,19 +48,24 @@ const Login = () => {
     } catch (error) {
       console.error('Login error:', error);
       
-      // More specific error handling
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        toast.error('Connection timeout. The server may be slow. Please try again.');
+      // Show specific error messages from backend
+      if (error.response?.data?.detail) {
+        // Backend provides specific error message
+        toast.error(error.response.data.detail);
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        toast.error('❌ Connection timeout. The server may be slow. Please try again.');
       } else if (error.response?.status === 401) {
-        toast.error('Invalid email or password. Please try again.');
+        toast.error('❌ Wrong email or password. Please check your credentials and try again.');
+      } else if (error.response?.status === 400) {
+        toast.error('❌ Please enter a valid email address and password.');
       } else if (error.response?.status === 500) {
-        toast.error('Server error. Please try again later.');
+        toast.error('❌ Server error occurred. Please try again in a few minutes.');
       } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        toast.error('Cannot connect to server. Please check if the backend is running.');
+        toast.error('❌ Cannot connect to server. Please check if the backend is running.');
       } else if (error.message?.includes('Network Error')) {
-        toast.error('Network connection failed. Please check your internet connection.');
+        toast.error('❌ Network connection failed. Please check your internet connection.');
       } else {
-        handleAPIError(error, 'Login failed');
+        toast.error('❌ Login failed. Please try again.');
       }
     } finally {
       setLoading(false);

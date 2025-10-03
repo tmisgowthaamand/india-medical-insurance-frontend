@@ -82,22 +82,24 @@ const Signup = () => {
     } catch (error) {
       console.error('Signup error:', error);
       
-      // More specific error handling
-      if (error.message?.includes('Email already exists') || error.message?.includes('already exists')) {
-        toast.error('This email is already registered. Please use a different email or try logging in.');
+      // Show specific error messages from backend
+      if (error.response?.data?.detail) {
+        // Backend provides specific error message
+        toast.error(error.response.data.detail);
+      } else if (error.message?.includes('Email already exists') || error.message?.includes('already exists')) {
+        toast.error('❌ This email is already registered. Please use a different email or try logging in.');
       } else if (error.response?.status === 400) {
-        const message = error.response?.data?.detail || error.message || 'Invalid signup data';
-        toast.error(message);
+        toast.error('❌ Please check your email format and password requirements.');
       } else if (error.response?.status === 409) {
-        toast.error('Email already exists. Please use a different email.');
+        toast.error('❌ Email already exists. Please use a different email address.');
       } else if (error.response?.status === 500) {
-        toast.error('Server error. Please try again later.');
+        toast.error('❌ Server error occurred. Please try again in a few minutes.');
       } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        toast.error('Network error. Please check your connection.');
-      } else if (error.message) {
-        toast.error(error.message);
+        toast.error('❌ Cannot connect to server. Please check if the backend is running.');
+      } else if (error.message?.includes('Network Error')) {
+        toast.error('❌ Network connection failed. Please check your internet connection.');
       } else {
-        handleAPIError(error, 'Signup failed');
+        toast.error('❌ Signup failed. Please try again.');
       }
     } finally {
       clearTimeout(timeoutId);

@@ -226,29 +226,30 @@ const Prediction = () => {
       // Dismiss loading toast
       toast.dismiss('email-loading');
       
-      // Always show success for immediate user feedback
+      // Show HONEST feedback - success only when email actually delivered
       if (result.success) {
         toast.success(
-          `✅ Email report sent successfully to ${email}!
+          `✅ Email delivered successfully to ${email}!
           
-📧 Check your inbox in the next few minutes
-📬 Subject: "MediCare+ Medical Insurance Prediction Report"
-💡 If not received within 5 minutes, check spam folder or use Download option`, 
+📧 Check your Gmail inbox now
+📬 Subject: "MediCare+ Medical Insurance Report"
+⏱️ Delivered in ${emailDuration}s
+💡 Check spam folder if not in inbox`, 
           {
-            duration: 10000,
+            duration: 8000,
             style: {
               maxWidth: '500px',
             }
           }
         );
       } else {
-        // Show user-friendly message even for backend errors
-        toast.success(
-          `✅ Report generated and queued for delivery to ${email}!
+        // Show HONEST error message when email fails
+        toast.error(
+          `❌ Email delivery failed to ${email}
           
-📧 Email delivery is being processed in the background
-⏱️ You should receive it within 5 minutes
-💡 If not received, please use the Download option below`, 
+${result.message || 'Gmail delivery error occurred'}
+⏱️ Processing time: ${emailDuration}s
+💡 Please try again or use Download option below`, 
           {
             duration: 10000,
             style: {
@@ -263,13 +264,13 @@ const Prediction = () => {
       console.error('Email sending error:', error);
       toast.dismiss('email-loading');
       
-      // Even for errors, provide positive user experience
-      toast.success(
-        `✅ Report generated successfully!
+      // Show HONEST error message for network/API failures
+      toast.error(
+        `❌ Email sending failed: ${error.message || 'Network error'}
         
-📧 Email delivery is being processed in the background
 ⏱️ Processing time: ${emailDuration}s
-💡 If you don't receive the email within 5 minutes, please use the Download option`, 
+💡 Please check your internet connection and try again
+📥 Use Download option to save report locally`, 
         {
           duration: 10000,
           style: {
