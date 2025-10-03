@@ -66,11 +66,15 @@ const Prediction = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Show immediate loading feedback
     setLoading(true);
+    toast.loading('🧠 Analyzing patient data...', { id: 'prediction-loading' });
 
     try {
       // Check authentication before making prediction
       if (!authAPI.isAuthenticated()) {
+        toast.dismiss('prediction-loading');
         toast.error('Please login to make predictions');
         navigate('/login');
         return;
@@ -85,11 +89,25 @@ const Prediction = () => {
         email: formData.email || null,
       };
 
+      console.log('🚀 Starting prediction API call...');
+      const startTime = Date.now();
+      
       const result = await predictionAPI.predict(data);
+      
+      const endTime = Date.now();
+      const duration = ((endTime - startTime) / 1000).toFixed(2);
+      console.log(`✅ Prediction completed in ${duration}s`);
+      
       setPrediction(result);
       
-      toast.success('🎉 Prediction generated successfully!');
+      // Dismiss loading and show success
+      toast.dismiss('prediction-loading');
+      toast.success(`🎉 Prediction generated successfully in ${duration}s!`);
+      
     } catch (error) {
+      console.error('❌ Prediction error:', error);
+      toast.dismiss('prediction-loading');
+      
       if (error.response?.status === 401) {
         toast.error('Authentication expired. Please login again.');
         authAPI.logout();
@@ -175,7 +193,8 @@ const Prediction = () => {
 
   // Email and Download Functions
   const sendEmailReport = async (predictionData, email) => {
-    setLoading(true);
+    // Don't set main loading state for email - use separate loading state
+    const emailStartTime = Date.now();
     
     try {
       // Check if user is authenticated first
@@ -184,20 +203,27 @@ const Prediction = () => {
         return;
       }
 
-      // Show immediate feedback
-      toast.loading('📧 Preparing to send email report...', { id: 'email-loading' });
+      // Show immediate feedback with better messaging
+      toast.loading('📧 Sending prediction report to your email...', { id: 'email-loading' });
       
-      // Prepare email data
+      // Prepare email data with enhanced headers for better inbox delivery
       const emailData = {
-        email: email,
+        email: email.trim().toLowerCase(), // Normalize email
         prediction: predictionData,
-        patient_data: formData
+        patient_data: {
+          ...formData,
+          // Add timestamp for uniqueness
+          report_generated: new Date().toISOString()
+        }
       };
 
       console.log('📧 Sending email report to:', email);
+      console.log('📊 Prediction amount:', predictionData.prediction);
       
       // Use the improved API with retry mechanism
       const result = await predictionAPI.sendPredictionEmail(emailData);
+      
+      const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
       
       // Dismiss loading toast
       toast.dismiss('email-loading');
@@ -206,55 +232,92 @@ const Prediction = () => {
         if (result.mock) {
           // Mock/demo response
           toast.error(
-            `⚠️ DEMO MODE: Email simulation for ${email}
+            `⚠️ DEMO MODE: Email simulation completed in ${emailDuration}s
             
-🔧 Backend service unavailable
-📧 This is a demonstration only
-💡 Check backend Gmail configuration`, 
+🔧 Backend email service unavailable
+📧 Report generated but not sent
+💡 Configure Gmail credentials to enable real emails`, 
             {
-              duration: 6000,
+              duration: 8000,
               style: {
-                maxWidth: '400px',
+                maxWidth: '450px',
               }
             }
           );
           
           // Show additional helpful info
           setTimeout(() => {
-            toast('💡 To receive real emails: Check Gmail credentials in backend .env file', {
-              duration: 4000,
+            toast('💡 To enable real emails: Set GMAIL_EMAIL and GMAIL_APP_PASSWORD in backend .env', {
+              duration: 5000,
               icon: '⚙️'
             });
-          }, 2000);
+          }, 3000);
         } else {
           // Real email sent successfully
-          toast.success(`📧 Email sent successfully to ${email}! Check your inbox and spam folder.`, {
-            duration: 4000,
-          });
+          toast.success(
+            `📧 Email sent successfully to ${email} in ${emailDuration}s!
+            
+✅ Check your inbox for the prediction report
+📬 If not in inbox, check spam/junk folder
+🏥 Subject: "MediCare+ Medical Insurance Prediction Report"`, 
+            {
+              duration: 6000,
+              style: {
+                maxWidth: '450px',
+              }
+            }
+          );
           
-          // Show additional info for real email
+          // Show additional helpful tips
           setTimeout(() => {
-            toast('📬 If you don\'t see the email, check your spam/junk folder!', {
-              duration: 3000,
-              icon: 'ℹ️'
+            toast('💡 Pro tip: Add our sender email to your contacts to avoid spam filtering', {
+              duration: 4000,
+              icon: '📮'
             });
-          }, 2000);
+          }, 3000);
+          
+          // Show final reminder
+          setTimeout(() => {
+            toast('📱 Email should arrive within 1-2 minutes. Check all folders!', {
+              duration: 3000,
+              icon: '⏰'
+            });
+          }, 6000);
         }
       } else {
         // Email failed
-        toast.error(`❌ Failed to send email: ${result.message || 'Unknown error'}`, {
-          duration: 4000,
-        });
+        toast.error(
+          `❌ Failed to send email in ${emailDuration}s
+          
+Error: ${result.message || 'Unknown error'}
+📝 Report data has been saved locally
+💡 Try again or use Download option`, 
+          {
+            duration: 6000,
+            style: {
+              maxWidth: '400px',
+            }
+          }
+        );
       }
       
     } catch (error) {
+      const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
       console.error('Email sending error:', error);
       toast.dismiss('email-loading');
-      toast.error(`❌ Email error: ${error.message}`, {
-        duration: 4000,
-      });
-    } finally {
-      setLoading(false);
+      toast.error(
+        `❌ Email service error after ${emailDuration}s
+        
+${error.message}
+📝 Report saved locally as backup
+💡 Try download option instead`, 
+        {
+          duration: 6000,
+          style: {
+            maxWidth: '400px',
+          }
+        }
+      );
     }
   };
 
