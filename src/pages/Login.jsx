@@ -59,7 +59,7 @@ const Login = () => {
       } else if (error.response?.status === 400) {
         toast.error('❌ Please enter a valid email address and password.');
       } else if (error.response?.status === 500) {
-        toast.error('❌ Server error occurred. Please try again in a few minutes.');
+        toast.error('❌  Please enter a valid email address and password.');
       } else if (error.code === 'NETWORK_ERROR' || !error.response) {
         toast.error('❌ Cannot connect to server. Please check if the backend is running.');
       } else if (error.message?.includes('Network Error')) {
