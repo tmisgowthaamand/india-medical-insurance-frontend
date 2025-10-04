@@ -199,7 +199,7 @@ const Prediction = () => {
       return;
     }
 
-    if (!predictionData) {
+    if (!prediction) {
       toast.error('Please generate a prediction first');
       return;
     }
@@ -229,7 +229,7 @@ const Prediction = () => {
       // Prepare email data
       const emailData = {
         email: email.trim().toLowerCase(),
-        prediction: predictionData,
+        prediction: prediction,
         patient_data: {
           ...formData,
           report_generated: new Date().toISOString()
@@ -237,7 +237,7 @@ const Prediction = () => {
       };
 
       console.log('📧 Sending email report to:', email);
-      console.log('📊 Prediction amount:', predictionData.prediction);
+      console.log('📊 Prediction amount:', prediction.prediction);
       
       // Call API - now with enhanced backend that provides immediate feedback
       const result = await predictionAPI.sendPredictionEmail(emailData);
@@ -382,7 +382,7 @@ ${errorMessage}
     }
   };
 
-  const downloadReport = (predictionData) => {
+  const downloadReport = (predictionResult) => {
     try {
       // Create a comprehensive report object
       const reportData = {
@@ -396,8 +396,8 @@ ${errorMessage}
           premium: formData.premium_annual_inr || 'Estimated'
         },
         prediction: {
-          claim_amount: formatCurrency(predictionData.prediction),
-          confidence: (predictionData.confidence * 100).toFixed(1) + '%',
+          claim_amount: formatCurrency(predictionResult.prediction),
+          confidence: (predictionResult.confidence * 100).toFixed(1) + '%',
           risk_level: getBMIRisk(formData.bmi)?.level || 'Unknown'
         },
         bmi_analysis: {
@@ -1207,7 +1207,7 @@ For medical consultation purposes only
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <button
-                          onClick={() => sendEmailReport(prediction, formData.email)}
+                          onClick={sendEmailReport}
                           className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
                         >
                           <Send className="h-4 w-4" />
