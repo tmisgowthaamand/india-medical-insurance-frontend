@@ -53,7 +53,7 @@ const Login = () => {
         // Backend provides specific error message
         toast.error(error.response.data.detail);
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        toast.error('❌ Connection timeout. The server may be slow. Please try again.');
+        toast.error('❌ Please enter a valid email address and password.');
       } else if (error.response?.status === 401) {
         toast.error('❌ Wrong email or password. Please check your credentials and try again.');
       } else if (error.response?.status === 400) {
