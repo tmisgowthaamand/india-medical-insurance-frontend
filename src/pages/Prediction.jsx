@@ -223,8 +223,13 @@ const Prediction = () => {
     try {
       const emailStartTime = Date.now();
 
-      // Show immediate processing feedback
-      toast.loading('📧 Processing your email request...', { id: 'email-loading' });
+      // Show immediate processing feedback with Render-specific message
+      const isRenderService = window.location.hostname !== 'localhost';
+      const loadingMessage = isRenderService 
+        ? '📧 Processing email request... (This may take 2-4 minutes for cold start)'
+        : '📧 Processing your email request...';
+      
+      toast.loading(loadingMessage, { id: 'email-loading' });
       
       // Prepare email data
       const emailData = {
@@ -313,16 +318,17 @@ ${message}
         // Check for specific error types
         if (errorMessage.includes('Gmail connection failed') || 
             errorMessage.includes('Authentication failed') ||
-            errorMessage.includes('SMTP')) {
+            errorMessage.includes('SMTP') ||
+            errorMessage.includes('stored locally')) {
           toast.error(
-            `❌ Gmail connection failed for ${email}
+            `❌ Email service not configured properly
             
 🔧 ${errorMessage}
 ⏱️ Processing time: ${emailDuration}s
-💡 Email service may be temporarily unavailable
+💡 Server Gmail credentials may not be set
 📥 Use Download option to save report locally`, 
             {
-              duration: 12000,
+              duration: 15000,
               style: {
                 maxWidth: '500px',
               }

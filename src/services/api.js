@@ -323,7 +323,7 @@ export const predictionAPI = {
   sendPredictionEmail: async (emailData, retryCount = 0) => {
     const maxRetries = 3;
     const baseTimeout = 90000; // 90 seconds base timeout
-    const renderTimeout = 180000; // 3 minutes for Render services (increased)
+    const renderTimeout = 240000; // 4 minutes for Render services (increased for cold starts)
     
     try {
       console.log(`📧 Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
@@ -334,14 +334,14 @@ export const predictionAPI = {
       
       console.log(`⏱️ Using timeout: ${timeout/1000}s for ${isRenderService ? 'Render' : 'local/other'} service`);
       
-      // For Render services, try to wake up the service first with shorter timeout
+      // For Render services, try to wake up the service first
       if (isRenderService) {
         try {
           console.log('🏥 Pinging health endpoint to wake up Render service...');
           
-          // Shorter health check timeout to avoid blocking
+          // Quick health check with shorter timeout
           const healthResponse = await api.get('/health', { 
-            timeout: 30000, // Reduced to 30 seconds
+            timeout: 15000, // Reduced to 15 seconds for quick check
             headers: {
               'Content-Type': 'application/json',
             }
@@ -350,8 +350,8 @@ export const predictionAPI = {
           console.log('✅ Service is awake, proceeding with email...');
           
         } catch (healthError) {
-          console.log('⚠️ Health check failed, but continuing:', healthError.message);
-          // Continue with email request even if health check fails
+          console.log('⚠️ Health check failed, but continuing with email request:', healthError.message);
+          // Continue with email request even if health check fails - service might still work
         }
       }
       
@@ -376,14 +376,33 @@ export const predictionAPI = {
       
       // Check if we should retry
       const shouldRetry = retryCount < maxRetries && (
-        error.code === 'ECONNABORTED' || // Timeout
-        error.message.includes('timeout') ||
-        error.message.includes('Network Error') ||
+        error.code === 'ECONNABORTED' || // Check for specific error types
+        error.message.includes('timeout') || // Timeout
+        error.message.includes('Network Error') || // Network error
+        error.message.includes('exceeded') || // Timeout exceeded
         !error.response || // Network error
         error.response?.status >= 500 // Server errors
       );
       
-      if (shouldRetry) {
+      if (error.message.includes('Gmail connection failed') || 
+          error.message.includes('Authentication failed') ||
+          error.message.includes('SMTP') ||
+          error.message.includes('stored locally')) {
+        toast.error(
+          `❌ Email service not configured properly
+          
+🔧 ${error.message}
+⏱️ Processing time: ${emailDuration}s
+💡 Gmail credentials may not be set on server
+📥 Use Download option to save report locally`, 
+          {
+            duration: 15000,
+            style: {
+              maxWidth: '500px',
+            }
+          }
+        );
+      } else if (shouldRetry) {
         const waitTime = (retryCount + 1) * 5000; // 5, 10, 15 seconds (increased wait time)
         
         console.log(`🔄 Retrying email send in ${waitTime / 1000} seconds...`);
