@@ -322,32 +322,32 @@ export const predictionAPI = {
 
   sendPredictionEmail: async (emailData, retryCount = 0) => {
     const maxRetries = 3;
-    const baseTimeout = 60000; // 60 seconds base timeout
-    const renderTimeout = 150000; // 2.5 minutes for Render services
+    const baseTimeout = 90000; // 90 seconds base timeout
+    const renderTimeout = 180000; // 3 minutes for Render services (increased)
     
     try {
-      console.log(`Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(`📧 Sending prediction email to: ${emailData.email} (attempt ${retryCount + 1}/${maxRetries + 1})`);
       
       // Determine if this is a Render service
       const isRenderService = API_BASE_URL.includes('onrender.com');
       const timeout = isRenderService ? renderTimeout : baseTimeout;
       
-      console.log(`Using timeout: ${timeout}ms for ${isRenderService ? 'Render' : 'local/other'} service`);
+      console.log(`⏱️ Using timeout: ${timeout/1000}s for ${isRenderService ? 'Render' : 'local/other'} service`);
       
-      // For Render services, try to wake up the service first
+      // For Render services, try to wake up the service first with shorter timeout
       if (isRenderService) {
         try {
           console.log('🏥 Pinging health endpoint to wake up Render service...');
           
-          // Create a separate axios instance for health check with its own timeout
+          // Shorter health check timeout to avoid blocking
           const healthResponse = await api.get('/health', { 
-            timeout: 45000, // 45 seconds for health check
+            timeout: 30000, // Reduced to 30 seconds
             headers: {
               'Content-Type': 'application/json',
             }
           });
           
-          console.log('✅ Service is awake');
+          console.log('✅ Service is awake, proceeding with email...');
           
         } catch (healthError) {
           console.log('⚠️ Health check failed, but continuing:', healthError.message);
@@ -365,7 +365,10 @@ export const predictionAPI = {
         }
       });
       
-      console.log('✅ Email sent successfully:', response.data);
+      // Log the actual response for debugging
+      console.log('📨 Backend response:', response.data);
+      
+      // Return the exact response from backend (don't modify success status)
       return response.data;
       
     } catch (error) {
@@ -381,7 +384,7 @@ export const predictionAPI = {
       );
       
       if (shouldRetry) {
-        const waitTime = (retryCount + 1) * 3000; // 3, 6, 9 seconds
+        const waitTime = (retryCount + 1) * 5000; // 5, 10, 15 seconds (increased wait time)
         
         console.log(`🔄 Retrying email send in ${waitTime / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
